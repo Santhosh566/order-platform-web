@@ -82,11 +82,12 @@ delivered, red failed, …) mean the same in every style. Themes live in `src/th
 | Route | What it does |
 |---|---|
 | `/shop` | Promotion banners at the top (one at a time, moving on every 6 s except while pointed at, focused, or for people who asked for less motion); a strip of round category pictures (each the photo of its best product) with sub-categories as pills; search; the full filter panel (category, brand, price, rating, stock, with counts) behind the **Filters** button; sort; prices including GST and a stock label (never a count); an "Extra 20% off" badge on products with their own coupon; add to cart. `/shop?offer=CODE` lists the products a coupon is for, with its terms |
-| `/cart` | Quantities, today's prices (with a notice when a price changed), saved or other address; standard delivery or a booked day and time (full windows greyed out); pay online or cash on delivery (when the server allows it); coupon code and the offers the customer can use. The summary is the server's quote: discount, GST and total |
+| `/cart` | Quantities, today's prices (with a notice when a price changed), saved or other address; standard delivery or a booked day and time (full windows greyed out); pay online or cash on delivery (when the server allows it); "Use my wallet balance" (on when there is any; the summary shows what the wallet pays and what is left to pay online; not with cash on delivery); coupon code and the offers the customer can use. The summary is the server's quote: discount, GST and total |
 | `/orders` | The customer's orders, newest first; updates live |
 | `/orders/:id` | Progress, GST lines (CGST + SGST or IGST) with any coupon discount, payment method and booked delivery slot, invoice PDF, cancel, return items, returns and credit notes, and rating the delivery (1–5 stars, for 14 days after it arrives) |
 | `/shop/:sku` | Photos, price, the offers (coupons) that apply with their codes to copy, delivery date for a PIN (naming holidays it skips), specifications, ratings breakdown and reviews (sorted, paged); "Write a review" once the product was delivered |
 | `/returns` | Return requests and where each one stands |
+| `/wallet` | Wallet balance, "Add a gift card" (the whole value goes in), and the history: gift cards, payments, refunds and credits, with links to the orders |
 | `/reviews` | Delivered products waiting for a review, and the customer's reviews with their status (and why one was not published); edit or delete |
 | `/wishlist` | Saved products at today's price and stock; add to cart, remove, or "Email me when it is back" for a sold-out one. The heart on every product card saves it |
 | `/account/address` | The default delivery address |
@@ -103,6 +104,7 @@ delivered, red failed, …) mean the same in every style. Themes live in `src/th
 | `/admin/returns` | Queue by status: approve, reject (with a note for the customer), receive goods (sellable or damaged) |
 | `/admin/reviews` | Reviews with words waiting to be published; publish, or reject with a note the customer is emailed |
 | `/admin/coupons` | Coupons with their uses and status (live, scheduled, expired, used up); create one for the whole order or for chosen categories and products; change what one is for, its end (or remove it) and on/off, with a warning when switching between whole order and chosen products; the code, discount and limits stay fixed; "Changed by" shows the last change |
+| `/admin/gift-cards` | Issue gift cards in batches (value, how many, valid until, batch name); the codes are shown once, to copy or download as CSV; list by status (not used, redeemed by whom, expired, stopped); stop a card that is not redeemed |
 | `/admin/promotions` | Shop banners with their status, views, clicks and click rate; create or change one with a live preview (opens a product, a category or a coupon's products); upload a wide picture; switch off; delete |
 | `/admin/holidays` | Delivery holidays by year: national or for one state; delivery dates and bookable days skip them |
 | `/admin/ops` | Failed messages (dead letters): replay once the cause is fixed, or dismiss with a note; history of who did what. Routes: pause, resume, stop or start the consumers (Kafka, files, timers); API and pipeline routes are view-only |
@@ -153,7 +155,7 @@ Things the backend decides, and the page only reflects:
 - The form checks the same rules as the server (`profile/profileSchema.ts`).
 - `DeliveryPartnerCard` on `/orders/:id`: once the parcel is picked up, the customer sees who is bringing it (name, photo, vehicle number, rating), with a reminder to check them before giving the delivery code.
 - **Inactive accounts:** the user page has Deactivate (with a reason) and Activate, for customers and drivers. The list can filter by status. An inactive user who signs in sees "You have no access … contact the administrator" on every page, while the menu and sign-out still work. If they are turned off mid-session, the first refused API call (`ACCOUNT_INACTIVE`) switches the app to that screen.
-- `/admin/users` ("Users" in the admin menu): search, role filter and paging, kept in the URL. `/admin/users/:userId` is a read-only page with the profile and the user's activity as a customer or driver.
+- `/admin/users` ("Users" in the admin menu): search, role filter and paging, kept in the URL. `/admin/users/:userId` shows the profile and the user's activity as a customer or driver, and a customer's wallet: balance, the latest changes, "Add credit" and "Take back" (with a note the customer sees).
 
 ## Sign-in
 

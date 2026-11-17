@@ -117,8 +117,8 @@ export function ReturnDialog({
         error={touched && needsDetails && !details.trim() ? 'Tell us what went wrong' : undefined}
       />
       <Text size="xs" c="dimmed">
-        Once we approve the return, our courier collects the items. The refund goes back to your original payment
-        method, with a GST credit note, after the items reach our warehouse.
+        Once we approve the return, our courier collects the items. The refund goes back the way you paid (to the
+        card first, then to your wallet for what it paid), with a GST credit note, after the items reach our warehouse.
       </Text>
       <Group justify="flex-end">
         <Button variant="default" onClick={onDone} disabled={request.isPending}>

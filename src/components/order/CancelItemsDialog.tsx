@@ -8,6 +8,7 @@ import { useCancelItems } from '../../customer/queries'
 import { notifyFailure } from '../../lib/notifyFailure'
 import { formatMoney } from '../../lib/format'
 import { activeUnits } from '../../lib/orderStatus'
+import { describeRefund } from '../../wallet/refundSplit'
 import { ItemLine } from '../ItemLines'
 import { useThumbnails } from '../thumbnails'
 
@@ -146,7 +147,9 @@ export function CancelItemsDialog({ order, staff = false, onDone }: { order: Ord
         <Text size="sm" data-testid="cancel-estimate">
           {unpaidCod
             ? `Cash due at the door goes down by about ${formatMoney(value, order.currency)}, to about ${formatMoney(order.amountDue - value, order.currency)}.`
-            : `About ${formatMoney(value, order.currency)} goes back to the original payment method, with a GST credit note.`}
+            : (order.walletAmount ?? 0) > 0
+              ? `About ${formatMoney(value, order.currency)} goes back: ${describeRefund(order, value, (n) => formatMoney(n, order.currency), 'the')}, with a GST credit note.`
+              : `About ${formatMoney(value, order.currency)} goes back to the original payment method, with a GST credit note.`}
         </Text>
       )}
       <Text size="xs" c="dimmed">

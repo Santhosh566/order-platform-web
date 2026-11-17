@@ -52,6 +52,7 @@ import {
 import { CreditNotes, Fact, InvoiceButton, Items, PaymentAndSlot } from '../../components/order/OrderParts'
 import { ReturnDialog } from './ReturnDialog'
 import { ReturnStatusBadge } from '../../components/ReturnStatusBadge'
+import { describeRefund } from '../../wallet/refundSplit'
 
 export function OrderDetailPage() {
   const { orderId = '' } = useParams()
@@ -266,7 +267,13 @@ function CancelButton({ order }: { order: Order }) {
       children: (
         <Text size="sm">
           {paid
-            ? `The remaining ${formatMoney(order.total - order.refundedTotal, order.currency)} goes back to your original payment method.`
+            ? (order.walletAmount ?? 0) > 0
+              ? `The remaining ${formatMoney(order.total - order.refundedTotal, order.currency)} comes back: ${describeRefund(
+                  order,
+                  order.total - order.refundedTotal,
+                  (n) => formatMoney(n, order.currency),
+                )}.`
+              : `The remaining ${formatMoney(order.total - order.refundedTotal, order.currency)} goes back to your original payment method.`
             : 'You have not been charged for this order.'}{' '}
           This cannot be undone.
         </Text>

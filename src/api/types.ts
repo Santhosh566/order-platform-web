@@ -154,6 +154,12 @@ export interface Order {
   cancelledTotal: number
   /** total − cancelledTotal: what the customer pays for what they keep (the cash due on COD) */
   amountDue: number
+  /** Paid from the customer's wallet (taken with the card when the order is paid) */
+  walletAmount: number
+  /** The part of refundedTotal that went back to the wallet; refunds go to the card first */
+  walletRefunded: number
+  /** total − walletAmount: what the card (or UPI) is charged */
+  cardAmount: number
   deliveredAt: string | null
   returnStatus: 'NONE' | 'PARTIAL' | 'FULL'
   invoiceNumber: string | null
@@ -191,6 +197,8 @@ export interface NewOrder {
   couponCode?: string | null
   paymentMethod?: 'PREPAID' | 'COD'
   deliverySlot?: { date: string; window: 'MORNING' | 'AFTERNOON' | 'EVENING' } | null
+  /** Pay as much as the wallet holds, and the rest online (not with cash on delivery) */
+  useWallet?: boolean
 }
 
 /** 202 reply to POST /api/orders */

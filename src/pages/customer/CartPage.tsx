@@ -43,6 +43,7 @@ import type { PaymentMethod } from '../../checkout/labels'
 import { PaymentChoice } from '../../checkout/PaymentChoice'
 import { useQuote } from '../../checkout/queries'
 import { formatMoney } from '../../lib/format'
+import { useWallet } from '../../wallet/queries'
 
 type AddressChoice = 'saved' | 'other'
 
@@ -80,6 +81,11 @@ export function CartPage() {
   const [coupon, setCoupon] = useState<string | null>(null)
   const [payment, setPayment] = useState<PaymentMethod>('PREPAID')
   const [slot, setSlot] = useState<ChosenSlot | null>(null)
+  // Store credit pays first when there is any, unless the customer unticks it
+  const wallet = useWallet()
+  const available = wallet.data?.available ?? 0
+  const [walletChoice, setWalletChoice] = useState<boolean | null>(null)
+  const wantsWallet = walletChoice ?? available > 0
 
   // The server prices the cart with the coupon and GST; the summary shows its figures once it has them
   const quoteRequest = useMemo(
@@ -97,9 +103,13 @@ export function CartPage() {
   const quote = useQuote(quoteRequest)
   const priced = quoteRequest ? quote.data : undefined
   const codRefused = payment === 'COD' && priced !== undefined && !priced.cashOnDelivery.available
+  const orderTotal = priced?.total ?? cartTotal(lines)
+  // The server takes min(available, total) as the order is placed; this shows the same split
+  const fromWallet = payment === 'PREPAID' && wantsWallet && available > 0 ? Math.min(available, orderTotal) : 0
+  const online = Math.round((orderTotal - fromWallet) * 100) / 100
 
   // One reference per cart, address and choices: a retry of the same checkout cannot place a second order
-  const signature = JSON.stringify([cart.lines.map((l) => [l.sku, l.quantity]), address, coupon, payment, slot])
+  const signature = JSON.stringify([cart.lines.map((l) => [l.sku, l.quantity]), address, coupon, payment, slot, fromWallet > 0])
   const reference = useMemo(() => newReference(signature), [signature])
 
   if (cart.lines.length === 0) {
@@ -139,6 +149,7 @@ export function CartPage() {
         couponCode: priced?.couponCode ?? null,
         paymentMethod: payment,
         deliverySlot: slot,
+        useWallet: fromWallet > 0,
       })
       cart.clear()
       notifications.show({
@@ -147,7 +158,11 @@ export function CartPage() {
         message:
           payment === 'COD'
             ? `Pay ${formatMoney(accepted.total, accepted.currency)} in cash when it arrives. We’ll keep you updated here and by email.`
-            : `Total ${formatMoney(accepted.total, accepted.currency)}. We’ll keep you updated here and by email.`,
+            : fromWallet > 0
+              ? `Total ${formatMoney(accepted.total, accepted.currency)}, paid ${
+                  online > 0 ? `from your wallet and online` : 'from your wallet'
+                }. We’ll keep you updated here and by email.`
+              : `Total ${formatMoney(accepted.total, accepted.currency)}. We’ll keep you updated here and by email.`,
       })
       navigate(`/orders/${encodeURIComponent(accepted.orderId)}`)
     } catch (error) {
@@ -313,7 +328,26 @@ export function CartPage() {
             <Paper withBorder radius="md" p="md">
               <Stack gap="sm">
                 <Title order={4}>Payment</Title>
-                <PaymentChoice value={payment} onChange={setPayment} quote={priced} disabled={busy} />
+                {available > 0 && (
+                  <Checkbox
+                    label={`Use my wallet balance (${formatMoney(available)})`}
+                    description={
+                      payment === 'COD'
+                        ? 'Not with cash on delivery: choose Pay online to use it'
+                        : fromWallet > 0 && online === 0
+                          ? 'Your wallet pays the whole order'
+                          : fromWallet > 0
+                            ? `${formatMoney(fromWallet)} from the wallet, the rest online`
+                            : undefined
+                    }
+                    checked={wantsWallet && payment === 'PREPAID'}
+                    onChange={(e) => setWalletChoice(e.currentTarget.checked)}
+                    disabled={busy || payment === 'COD'}
+                  />
+                )}
+                {!(fromWallet > 0 && online === 0) && (
+                  <PaymentChoice value={payment} onChange={setPayment} quote={priced} disabled={busy} />
+                )}
               </Stack>
             </Paper>
 
@@ -345,9 +379,23 @@ export function CartPage() {
                 <Group justify="space-between">
                   <Text fw={700}>{payment === 'COD' ? 'To pay on delivery' : 'Total'} (incl. GST)</Text>
                   <Text fw={700} size="lg" aria-label="Order total">
-                    {formatMoney(priced?.total ?? cartTotal(lines))}
+                    {formatMoney(orderTotal)}
                   </Text>
                 </Group>
+                {fromWallet > 0 && (
+                  <>
+                    <Group justify="space-between">
+                      <Text>From wallet</Text>
+                      <Text c="green">− {formatMoney(fromWallet)}</Text>
+                    </Group>
+                    <Group justify="space-between">
+                      <Text fw={600}>To pay online</Text>
+                      <Text fw={600} aria-label="To pay online">
+                        {formatMoney(online)}
+                      </Text>
+                    </Group>
+                  </>
+                )}
                 <Text size="xs" c="dimmed">
                   {priced
                     ? `Includes ${formatMoney(priced.taxTotal)} GST (${
@@ -373,7 +421,7 @@ export function CartPage() {
                     Add a delivery address to place the order.
                   </Text>
                 )}
-                {payment === 'PREPAID' && (
+                {payment === 'PREPAID' && online > 0 && (
                   <Text size="xs" c="dimmed" ta="center">
                     Payments run in test mode: no real money is charged.
                   </Text>

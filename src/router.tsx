@@ -25,6 +25,8 @@ const ReturnsPage = load(() => import('./pages/customer/ReturnsPage'), 'ReturnsP
 const WishlistPage = load(() => import('./pages/customer/WishlistPage'), 'WishlistPage')
 const MyReviewsPage = load(() => import('./pages/customer/MyReviewsPage'), 'MyReviewsPage')
 const AddressPage = load(() => import('./pages/customer/AddressPage'), 'AddressPage')
+const WalletPage = load(() => import('./pages/customer/WalletPage'), 'WalletPage')
+const GiftCardsPage = load(() => import('./pages/admin/GiftCardsPage'), 'GiftCardsPage')
 
 const DashboardPage = load(() => import('./pages/admin/DashboardPage'), 'DashboardPage')
 const AdminOrdersPage = load(() => import('./pages/admin/AdminOrdersPage'), 'AdminOrdersPage')
@@ -78,6 +80,7 @@ export const routes: RouteObject[] = [
       screen('wishlist', CUSTOMER, <WishlistPage />),
       screen('reviews', CUSTOMER, <MyReviewsPage />),
       screen('account/address', CUSTOMER, <AddressPage />),
+      screen('wallet', CUSTOMER, <WalletPage />),
 
       screen('admin', ADMIN, <DashboardPage />),
       screen('admin/orders', ADMIN, <AdminOrdersPage />),
@@ -88,6 +91,7 @@ export const routes: RouteObject[] = [
       screen('admin/returns', ADMIN, <AdminReturnsPage />),
       screen('admin/reviews', ADMIN, <AdminReviewsPage />),
       screen('admin/coupons', ADMIN, <CouponsPage />),
+      screen('admin/gift-cards', ADMIN, <GiftCardsPage />),
       screen('admin/promotions', ADMIN, <PromotionsPage />),
       screen('admin/deliveries', ADMIN, <DeliveriesPage />),
       screen('admin/holidays', ADMIN, <HolidaysPage />),

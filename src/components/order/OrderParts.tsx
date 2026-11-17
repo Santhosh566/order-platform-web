@@ -121,6 +121,11 @@ export function Items({ order }: { order: Order }) {
         {order.refundedTotal > 0 && (
           <>
             <Fact label="Refunded" value={`− ${formatMoney(order.refundedTotal, order.currency)}`} />
+            {(order.walletRefunded ?? 0) > 0 && (
+              <Text size="xs" c="dimmed" ta="right">
+                {formatMoney(order.walletRefunded, order.currency)} of it back to the wallet
+              </Text>
+            )}
             <Group justify="space-between">
               <Text fw={600}>Net paid</Text>
               <Text fw={600}>{formatMoney(order.total - order.refundedTotal - unpaidCancelled, order.currency)}</Text>
@@ -139,7 +144,22 @@ export function PaymentAndSlot({ order }: { order: Order }) {
   const collected = cod && order.paymentTransactionId !== null
   return (
     <Stack gap={4}>
-      <Fact label="Payment" value={PAYMENT_LABELS[order.paymentMethod ?? 'PREPAID']} />
+      <Fact
+        label="Payment"
+        value={
+          (order.walletAmount ?? 0) > 0
+            ? order.cardAmount === 0
+              ? 'Wallet'
+              : `${PAYMENT_LABELS[order.paymentMethod ?? 'PREPAID']} and wallet`
+            : PAYMENT_LABELS[order.paymentMethod ?? 'PREPAID']
+        }
+      />
+      {(order.walletAmount ?? 0) > 0 && (
+        <>
+          <Fact label="From wallet" value={formatMoney(order.walletAmount, order.currency)} />
+          {order.cardAmount > 0 && <Fact label="Online" value={formatMoney(order.cardAmount, order.currency)} />}
+        </>
+      )}
       {cod && !collected && !order.status.match(/CANCELLED|RETURNED|FAILED|OUT_OF_STOCK|REJECTED/) && (
         <Badge color="orange" variant="light" w="fit-content">
           Pay {formatMoney(order.amountDue ?? order.total, order.currency)} in cash at the door

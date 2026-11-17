@@ -1,4 +1,19 @@
-import { Alert, Anchor, Badge, Button, Grid, Group, Modal, Paper, SimpleGrid, Stack, Text, Textarea, Title } from '@mantine/core'
+import {
+  Alert,
+  Anchor,
+  Badge,
+  Button,
+  Grid,
+  Group,
+  Modal,
+  NumberInput,
+  Paper,
+  SimpleGrid,
+  Stack,
+  Text,
+  Textarea,
+  Title,
+} from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { IconLock, IconLockOpen } from '@tabler/icons-react'
 import { useState } from 'react'
@@ -12,6 +27,8 @@ import { QueryState } from '../../components/QueryState'
 import { formatDate, formatDateTime, formatMoney } from '../../lib/format'
 import { GENDER_LABELS, VEHICLE_LABELS } from '../../profile/types'
 import { UserAvatar } from '../../profile/UserAvatar'
+import { useAdjustWallet, useUserWallet } from '../../wallet/queries'
+import { WalletHistory } from '../../wallet/WalletHistory'
 
 const dash = (value: string | null | undefined) => (value ? value : '—')
 
@@ -88,6 +105,7 @@ function UserView({ detail }: { detail: UserDetail }) {
               <Fact label="Gender" value={profile.customer?.gender ? GENDER_LABELS[profile.customer.gender] : '—'} />
             </Section>
           )}
+          {customer && <CustomerWallet userId={profile.userId} />}
           {driver && profile.driver && (
             <Section
               title="As a driver"
@@ -133,7 +151,7 @@ function UserView({ detail }: { detail: UserDetail }) {
             </Section>
           )}
           <Text size="xs" c="dimmed">
-            Read-only. Users change their own details from Edit profile; roles and passwords are managed in Keycloak.
+            Users change their own details from Edit profile; roles and passwords are managed in Keycloak.
           </Text>
         </Stack>
       </Grid.Col>
@@ -244,6 +262,139 @@ function AccountStatus({ detail }: { detail: UserDetail }) {
         </Stack>
       </Modal>
     </Stack>
+  )
+}
+
+/** The customer's store credit, and giving or taking it back with a note the customer sees. */
+function CustomerWallet({ userId }: { userId: string }) {
+  const wallet = useUserWallet(userId)
+  const [adjusting, setAdjusting] = useState<'credits' | 'debits' | null>(null)
+  return (
+    <Section
+      title="Wallet"
+      action={
+        <Group gap="xs">
+          <Button size="xs" variant="light" onClick={() => setAdjusting('credits')}>
+            Add credit
+          </Button>
+          <Button
+            size="xs"
+            variant="subtle"
+            color="red"
+            onClick={() => setAdjusting('debits')}
+            disabled={!wallet.data || wallet.data.balance <= 0}
+          >
+            Take back
+          </Button>
+        </Group>
+      }
+    >
+      <QueryState query={wallet}>
+        {(data) => (
+          <>
+            <Fact label="Balance" value={formatMoney(data.balance, data.currency)} />
+            <WalletHistory
+              entries={data.history.slice(0, 10)}
+              currency={data.currency}
+              orderLink={(id) => `/admin/orders/${encodeURIComponent(id)}`}
+              showWho
+            />
+          </>
+        )}
+      </QueryState>
+      <Modal
+        opened={adjusting !== null}
+        onClose={() => setAdjusting(null)}
+        title={adjusting === 'debits' ? 'Take back store credit' : 'Add store credit'}
+      >
+        {adjusting && (
+          <AdjustWallet
+            userId={userId}
+            direction={adjusting}
+            balance={wallet.data?.balance ?? 0}
+            onDone={() => setAdjusting(null)}
+          />
+        )}
+      </Modal>
+    </Section>
+  )
+}
+
+function AdjustWallet({
+  userId,
+  direction,
+  balance,
+  onDone,
+}: {
+  userId: string
+  direction: 'credits' | 'debits'
+  balance: number
+  onDone: () => void
+}) {
+  const adjust = useAdjustWallet(userId, direction)
+  const [amount, setAmount] = useState<number | string>('')
+  const [note, setNote] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    adjust.mutate(
+      { amount: Number(amount), note: note.trim() },
+      {
+        onSuccess: (entry) => {
+          notifications.show({
+            color: 'green',
+            message: `Done. The wallet now holds ${formatMoney(entry.balanceAfter)}.`,
+          })
+          onDone()
+        },
+        onError: (err) => setError(errorMessage(err)),
+      },
+    )
+  }
+  return (
+    <form onSubmit={submit}>
+      <Stack gap="sm">
+        <Text size="sm">
+          {direction === 'credits'
+            ? 'Store credit can be spent on any order paid online. It does not expire and is not paid out as cash.'
+            : `Only for credit given by mistake. The wallet holds ${formatMoney(balance)}.`}
+        </Text>
+        <NumberInput
+          label="Amount (₹)"
+          value={amount}
+          onChange={setAmount}
+          min={1}
+          max={direction === 'debits' ? balance : 25000}
+          decimalScale={2}
+          required
+        />
+        <Textarea
+          label="Note"
+          description="The customer sees it in their wallet history"
+          placeholder={direction === 'credits' ? 'e.g. Sorry your order arrived late' : 'e.g. Credit given twice'}
+          required
+          maxLength={200}
+          value={note}
+          onChange={(e) => setNote(e.currentTarget.value)}
+        />
+        {error && (
+          <Alert color="red" p="xs">
+            {error}
+          </Alert>
+        )}
+        <Group justify="flex-end">
+          <Button
+            type="submit"
+            color={direction === 'debits' ? 'red' : undefined}
+            loading={adjust.isPending}
+            disabled={!note.trim() || !amount}
+          >
+            {direction === 'credits' ? 'Add credit' : 'Take back'}
+          </Button>
+        </Group>
+      </Stack>
+    </form>
   )
 }
 
