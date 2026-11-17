@@ -9,6 +9,8 @@ export interface Call {
   /** The query string as parameters, e.g. {status: 'SHIPPED'} */
   query: Record<string, string>
   body: unknown
+  /** The request's headers, e.g. {'If-Match': '"4"'} */
+  headers: Record<string, string>
 }
 
 type Reply = { status?: number; body?: unknown } | ((call: Call) => { status?: number; body?: unknown })
@@ -23,6 +25,7 @@ export function fakeBackend(routes: Record<string, Reply>) {
       path: url.pathname,
       query: Object.fromEntries(url.searchParams),
       body: typeof init?.body === 'string' ? JSON.parse(init.body) : undefined,
+      headers: { ...((init?.headers as Record<string, string> | undefined) ?? {}) },
     }
     calls.push(call)
     const route = routes[`${method} ${url.pathname}`]

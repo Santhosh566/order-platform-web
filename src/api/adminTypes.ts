@@ -214,6 +214,8 @@ export interface DeliveryTerms {
 
 export interface WaitingDelivery extends DeliveryTerms {
   orderId: string
+  /** The order's version, for If-Match when assigning */
+  version: number
   status: OrderStatus
   city: string
   state: string
@@ -227,6 +229,8 @@ export type DeliveryStatus = 'ASSIGNED' | 'PICKED_UP' | 'DELIVERED' | 'FAILED' |
 /** GET /api/admin/delivery/in-progress */
 export interface DeliveryInProgress {
   orderId: string
+  /** The order's version, for If-Match when assigning */
+  version: number
   status: OrderStatus
   deliveryStatus: DeliveryStatus
   attempt: number

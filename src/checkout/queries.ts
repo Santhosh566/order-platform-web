@@ -105,13 +105,16 @@ export interface Coupon {
   active: boolean
   createdAt: string
   createdBy: string | null
+  /** The last change to its products, end or on/off; null if never changed */
+  updatedAt: string | null
+  updatedBy: string | null
   /** Orders that used it and did not end unfulfilled */
   used: number
   /** The products (sku) and categories (categoryId) it is for; empty for the whole order */
   appliesTo: Array<{ sku: string | null; categoryId: number | null; name: string }>
 }
 
-export type NewCoupon = Omit<Coupon, 'active' | 'createdAt' | 'createdBy' | 'used' | 'appliesTo'> & {
+export type NewCoupon = Omit<Coupon, 'active' | 'createdAt' | 'createdBy' | 'updatedAt' | 'updatedBy' | 'used' | 'appliesTo'> & {
   /** With categoryIds: only these products; both empty for the whole order */
   skus: string[]
   categoryIds: number[]
@@ -132,11 +135,26 @@ export function useCreateCoupon() {
   })
 }
 
+/**
+ * What can change once a coupon exists; a field left out stays as it is. skus and categoryIds go
+ * together and replace what it is for (both empty: the whole order). The code, discount and limits
+ * cannot change: customers have been told them.
+ */
+export interface CouponChange {
+  code: string
+  active?: boolean
+  endsAt?: string
+  /** Removes the end, so it runs until switched off */
+  clearEndsAt?: boolean
+  skus?: string[]
+  categoryIds?: number[]
+}
+
 export function useChangeCoupon() {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: ({ code, active }: { code: string; active: boolean }) =>
-      api<Coupon>(`/api/admin/coupons/${encodeURIComponent(code)}`, { method: 'PATCH', body: { active } }),
+    mutationFn: ({ code, ...change }: CouponChange) =>
+      api<Coupon>(`/api/admin/coupons/${encodeURIComponent(code)}`, { method: 'PATCH', body: change }),
     onSuccess: () => void client.invalidateQueries({ queryKey: ['admin', 'coupons'] }),
   })
 }

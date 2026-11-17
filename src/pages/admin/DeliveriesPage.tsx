@@ -76,7 +76,7 @@ export function DeliveriesPage() {
                         <Table.Td ta="right">{row.itemCount}</Table.Td>
                         <Table.Td>{formatDateTime(row.waitingSince)}</Table.Td>
                         <Table.Td>
-                          <AssignDriver orderId={row.orderId} />
+                          <AssignDriver orderId={row.orderId} version={row.version} />
                         </Table.Td>
                       </Table.Tr>
                     ))}
@@ -140,7 +140,7 @@ export function DeliveriesPage() {
                         <Table.Td>{formatDateTime(row.pickedUpAt ?? row.assignedAt)}</Table.Td>
                         <Table.Td>
                           {row.deliveryStatus === 'ASSIGNED' ? (
-                            <AssignDriver orderId={row.orderId} current={row.deliveryUserId} label="Reassign" />
+                            <AssignDriver orderId={row.orderId} version={row.version} current={row.deliveryUserId} label="Reassign" />
                           ) : (
                             <Text size="xs" c="dimmed">
                               With the driver

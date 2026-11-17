@@ -97,12 +97,12 @@ delivered, red failed, …) mean the same in every style. Themes live in `src/th
 |---|---|
 | `/admin` | Revenue, orders, returns to review, orders waiting for a driver, low stock, dead letters; orders by status |
 | `/admin/orders` | Search (id, customer, reference, invoice no.) and status filter, kept in the URL; 25 per page |
-| `/admin/orders/:id` | Everything the customer sees plus payment and fraud; cancel, goodwill refund, assign driver, return to stock; delivery attempts |
+| `/admin/orders/:id` | Everything the customer sees plus payment and fraud; cancel, goodwill refund, assign driver, return to stock; delivery attempts. Each action sends the order version shown (`If-Match`). If the order changed meanwhile, nothing happens: a yellow "This order changed" notice says what it is now and the page reloads it (the customer's cancel and cancel items work the same way) |
 | `/admin/catalog` | Products with price, GST, stock and flags; new product |
 | `/admin/catalog/:sku` | Edit details, change the price now or schedule it, record stock received/corrected/written off, full stock history |
 | `/admin/returns` | Queue by status: approve, reject (with a note for the customer), receive goods (sellable or damaged) |
 | `/admin/reviews` | Reviews with words waiting to be published; publish, or reject with a note the customer is emailed |
-| `/admin/coupons` | Coupons with their uses and status (live, scheduled, expired, used up); create one for the whole order or for chosen categories and products; switch one off |
+| `/admin/coupons` | Coupons with their uses and status (live, scheduled, expired, used up); create one for the whole order or for chosen categories and products; change what one is for, its end (or remove it) and on/off, with a warning when switching between whole order and chosen products; the code, discount and limits stay fixed; "Changed by" shows the last change |
 | `/admin/promotions` | Shop banners with their status, views, clicks and click rate; create or change one with a live preview (opens a product, a category or a coupon's products); upload a wide picture; switch off; delete |
 | `/admin/holidays` | Delivery holidays by year: national or for one state; delivery dates and bookable days skip them |
 | `/admin/ops` | Failed messages (dead letters): replay once the cause is fixed, or dismiss with a note; history of who did what. Routes: pause, resume, stop or start the consumers (Kafka, files, timers); API and pipeline routes are view-only |

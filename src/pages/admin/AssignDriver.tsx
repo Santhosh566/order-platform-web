@@ -2,7 +2,7 @@ import { Button, Group, Select } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import { useState } from 'react'
 import { useAssignDriver, useAssignPickup, useDrivers } from '../../admin/queries'
-import { errorMessage } from '../../lib/errors'
+import { notifyFailure } from '../../lib/notifyFailure'
 
 /**
  * Choose a delivery user for an order, or for a return pickup (returnId); drivers with less work
@@ -10,11 +10,14 @@ import { errorMessage } from '../../lib/errors'
  */
 export function AssignDriver({
   orderId,
+  version,
   returnId,
   current,
   label = 'Assign',
 }: {
   orderId?: string
+  /** The order version the admin was shown, so an order someone else assigned meanwhile is not taken over */
+  version?: number
   returnId?: string
   current?: string
   label?: string
@@ -46,12 +49,12 @@ export function AssignDriver({
         })
         setDriver(null)
       },
-      onError: (error: unknown) => notifications.show({ color: 'red', title: 'Not assigned', message: errorMessage(error) }),
+      onError: (error: unknown) => notifyFailure('Not assigned', error),
     }
     if (returnId) {
       assignPickup.mutate({ returnId, deliveryUserId: driver }, handlers)
     } else {
-      assignOrder.mutate({ orderId: target, deliveryUserId: driver }, handlers)
+      assignOrder.mutate({ orderId: target, deliveryUserId: driver, version }, handlers)
     }
   }
 

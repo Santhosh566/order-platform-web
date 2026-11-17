@@ -36,7 +36,7 @@ import { QueryState } from '../../components/QueryState'
 import { StatusBadge } from '../../components/StatusBadge'
 import { useCreditNotes, useOrder } from '../../customer/queries'
 import { useLiveOrders } from '../../customer/useLiveOrders'
-import { errorMessage } from '../../lib/errors'
+import { notifyFailure } from '../../lib/notifyFailure'
 import { formatDate, formatDateTime, formatMoney } from '../../lib/format'
 import { stateName } from '../../lib/indianStates'
 import { canCancelItems, hasInvoice, isCancellable, shortOrderId, statusLabel } from '../../lib/orderStatus'
@@ -122,7 +122,7 @@ function AdminOrderView({ order, live }: { order: AdminOrder; live: ReactElement
                 ? 'The last delivery attempt failed. Assign a driver to try again, or return the goods to stock.'
                 : 'Ready to ship and waiting for a driver.'}
             </Text>
-            <AssignDriver orderId={order.orderId} />
+            <AssignDriver orderId={order.orderId} version={order.version} />
           </Group>
         </Paper>
       )}
@@ -275,7 +275,7 @@ function attemptColor(status: string): string {
 
 /** Money back without goods coming back; the backend spreads it over the lines with their GST. */
 export function GoodwillForm({ order, refundable, onDone }: { order: Order; refundable: number; onDone: () => void }) {
-  const refund = useGoodwillRefund(order.orderId)
+  const refund = useGoodwillRefund(order.orderId, order.version)
   const [amount, setAmount] = useState<number | ''>('')
   const [reason, setReason] = useState('')
   const [touched, setTouched] = useState(false)
@@ -301,7 +301,7 @@ export function GoodwillForm({ order, refundable, onDone }: { order: Order; refu
           })
           onDone()
         },
-        onError: (error) => notifications.show({ color: 'red', title: 'Not refunded', message: errorMessage(error) }),
+        onError: (error) => notifyFailure('Not refunded', error),
       },
     )
   }
@@ -348,7 +348,7 @@ export function GoodwillForm({ order, refundable, onDone }: { order: Order; refu
 }
 
 function ReturnToStockButton({ order }: { order: Order }) {
-  const action = useReturnToStock(order.orderId)
+  const action = useReturnToStock(order.orderId, order.version)
   const confirm = () =>
     modals.openConfirmModal({
       title: 'Give up on delivery?',
@@ -363,7 +363,7 @@ function ReturnToStockButton({ order }: { order: Order }) {
       onConfirm: () =>
         action.mutate(undefined, {
           onSuccess: () => notifications.show({ color: 'green', title: 'Returned to stock', message: 'Refund issued.' }),
-          onError: (error) => notifications.show({ color: 'red', title: 'Not returned', message: errorMessage(error) }),
+          onError: (error) => notifyFailure('Not returned', error),
         }),
     })
   return (
@@ -374,7 +374,7 @@ function ReturnToStockButton({ order }: { order: Order }) {
 }
 
 function CancelButton({ order }: { order: Order }) {
-  const cancel = useAdminCancel(order.orderId)
+  const cancel = useAdminCancel(order.orderId, order.version)
   const confirm = () =>
     modals.openConfirmModal({
       title: 'Cancel this order for the customer?',
@@ -392,7 +392,7 @@ function CancelButton({ order }: { order: Order }) {
       onConfirm: () =>
         cancel.mutate(undefined, {
           onSuccess: (reply) => notifications.show({ color: 'green', title: 'Order cancelled', message: reply.message }),
-          onError: (error) => notifications.show({ color: 'red', title: 'Could not cancel', message: errorMessage(error) }),
+          onError: (error) => notifyFailure('Could not cancel', error),
         }),
     })
   return (

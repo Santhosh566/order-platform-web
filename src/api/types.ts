@@ -128,6 +128,8 @@ export interface OrderItem {
 /** GET /api/orders/{id} */
 export interface Order {
   orderId: string
+  /** Raised by every change; sent back as If-Match with an action, so one on an older copy is refused */
+  version: number
   customerId: string
   status: OrderStatus
   orderType: string | null

@@ -141,6 +141,48 @@ describe('admin', () => {
     expect(backend.sent('POST', '/api/admin/coupons')[0].body).toMatchObject({ code: 'LAMPS20', categoryIds: [2], skus: [] })
   })
 
+  it('changes what a coupon is for and removes its end, but not the terms customers were told', async () => {
+    const lamps20 = {
+      code: 'LAMPS20', description: '20% off lamps', discountType: 'PERCENT', discountValue: 20, maxDiscount: 500,
+      minOrderValue: 999, startsAt: null, endsAt: '2026-12-31T23:59:00', usageLimit: null, perCustomerLimit: 1,
+      firstOrderOnly: false, active: true, createdAt: '2026-11-01T10:00:00', createdBy: 'ADM-001',
+      updatedAt: '2026-11-12T09:30:00', updatedBy: 'ADM-002', used: 3,
+      appliesTo: [{ sku: null, categoryId: 2, name: 'Lamps' }, { sku: 'PEN-01', categoryId: null, name: 'Gel pen' }],
+    }
+    const backend = fakeBackend({
+      'GET /api/admin/coupons': { body: [lamps20] },
+      'GET /api/admin/categories': { body: categories },
+      'GET /api/admin/catalog': { body: { items: [], page: 0, totalItems: 0, totalPages: 0 } },
+      'PATCH /api/admin/coupons/LAMPS20': (call: Call) => ({ body: { ...lamps20, ...(call.body as object), appliesTo: [] } }),
+    })
+    const user = userEvent.setup()
+    renderRoutes(routes, '/admin/coupons', fakeAuth(['ADMIN']))
+
+    const table = await screen.findByRole('table', { name: 'Coupons' })
+    expect(within(table).getByText(/Changed by ADM-002/)).toBeInTheDocument()
+    await user.click(within(table).getByRole('button', { name: 'Edit LAMPS20' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Change LAMPS20' })
+
+    // The terms are shown, not editable; what it is for is filled in as it is now
+    expect(within(dialog).getByLabelText('Terms customers were told')).toHaveTextContent('20% off, up to ₹500.00')
+    expect(within(dialog).queryByRole('textbox', { name: /^Code/ })).not.toBeInTheDocument()
+    expect(within(dialog).getByRole('radio', { name: 'Chosen products' })).toBeChecked()
+    // Shown as chosen pills (the open list holds the option too)
+    expect(within(dialog).getAllByText('Home › Lamps').length).toBeGreaterThan(0)
+    expect(within(dialog).getAllByText('Gel pen (PEN-01)').length).toBeGreaterThan(0)
+    expect(within(dialog).getByRole('button', { name: 'Save changes' })).toBeDisabled()
+
+    // Whole order instead: every cart is repriced, so it says so
+    await user.click(within(dialog).getByRole('radio', { name: 'Whole order' }))
+    expect(within(dialog).getByText('Every cart with this code is repriced')).toBeInTheDocument()
+    await user.clear(within(dialog).getByLabelText('Ends'))
+    await user.click(within(dialog).getByRole('button', { name: 'Save changes' }))
+
+    await waitFor(() => expect(backend.sent('PATCH', '/api/admin/coupons/LAMPS20')).toHaveLength(1))
+    expect(backend.sent('PATCH', '/api/admin/coupons/LAMPS20')[0].body).toEqual({ skus: [], categoryIds: [], clearEndsAt: true })
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Change LAMPS20' })).not.toBeInTheDocument())
+  })
+
   it('lists promotions with their figures, and creates one for a coupon', async () => {
     const live: Promotion = {
       id: 7, title: 'Diwali lights', message: null, callToAction: null, theme: 'ORANGE', imageKey: null, imageAlt: null,

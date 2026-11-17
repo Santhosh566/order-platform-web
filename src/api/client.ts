@@ -42,6 +42,26 @@ export function isAccountInactive(error: unknown): boolean {
   )
 }
 
+/** The reply to an action on an order that changed after the person opened it (If-Match). */
+export interface OrderChanged {
+  status: 'CHANGED'
+  reason: string
+  orderId: string
+  orderStatus: string
+  version: number
+}
+
+/** True when the order changed after it was shown: reload it and let the person decide again. */
+export function isOrderChanged(error: unknown): error is ApiError & { body: OrderChanged } {
+  return (
+    error instanceof ApiError &&
+    error.status === 412 &&
+    typeof error.body === 'object' &&
+    error.body !== null &&
+    (error.body as { status?: unknown }).status === 'CHANGED'
+  )
+}
+
 /** The current access token, for the few calls fetch cannot make (the live EventSource stream). */
 export function accessToken(): Promise<string | null> {
   return getToken()
@@ -53,6 +73,11 @@ export interface RequestOptions {
   signal?: AbortSignal
   /** Public endpoints are called without a token. */
   anonymous?: boolean
+  /**
+   * The version of the order the person was shown. The action is refused (412, see isOrderChanged)
+   * when the order has changed since, instead of acting on what they saw.
+   */
+  ifMatch?: number
 }
 
 export async function api<T>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -62,6 +87,9 @@ export async function api<T>(path: string, options: RequestOptions = {}): Promis
     if (token) {
       headers.Authorization = `Bearer ${token}`
     }
+  }
+  if (options.ifMatch !== undefined) {
+    headers['If-Match'] = `"${options.ifMatch}"`
   }
   const isForm = typeof FormData !== 'undefined' && options.body instanceof FormData
   // The browser sets multipart/form-data with its boundary itself

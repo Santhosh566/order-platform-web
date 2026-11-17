@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import type { Order } from '../../api/types'
 import { useCancelItems } from '../../customer/queries'
-import { errorMessage } from '../../lib/errors'
+import { notifyFailure } from '../../lib/notifyFailure'
 import { formatMoney } from '../../lib/format'
 import { activeUnits } from '../../lib/orderStatus'
 import { ItemLine } from '../ItemLines'
@@ -35,7 +35,7 @@ function unitsValue(order: Order, sku: string, units: number): number {
  * an admin on any order; the server checks the status and the units left again.
  */
 export function CancelItemsDialog({ order, staff = false, onDone }: { order: Order; staff?: boolean; onDone: () => void }) {
-  const cancel = useCancelItems(order.orderId)
+  const cancel = useCancelItems(order.orderId, order.version)
   const client = useQueryClient()
   const skus = [...activeUnits(order).entries()].filter(([, left]) => left > 0)
   const totalUnits = skus.reduce((sum, [, left]) => sum + left, 0)
@@ -77,7 +77,7 @@ export function CancelItemsDialog({ order, staff = false, onDone }: { order: Ord
       })
       onDone()
     } catch (error) {
-      notifications.show({ color: 'red', title: 'Items not cancelled', message: errorMessage(error) })
+      notifyFailure('Items not cancelled', error)
     }
   }
 

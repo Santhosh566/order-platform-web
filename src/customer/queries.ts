@@ -98,26 +98,31 @@ export function usePlaceOrder() {
   })
 }
 
-export function useCancelOrder(orderId: string) {
+/**
+ * Cancels the order the customer is looking at. version is the one they were shown: if the order
+ * changed since, nothing happens and it is reloaded (isOrderChanged).
+ */
+export function useCancelOrder(orderId: string, version?: number) {
   const client = useQueryClient()
   return useMutation({
     mutationFn: () =>
       api<{ status: string; orderId: string; message: string }>(
         `/api/orders/${encodeURIComponent(orderId)}/cancel`,
-        { method: 'POST' },
+        { method: 'POST', ifMatch: version },
       ),
     onSettled: () => void client.invalidateQueries({ queryKey: keys.orders }),
   })
 }
 
 /** Cancels some units before dispatch (the customer's own order, or any order for an admin). */
-export function useCancelItems(orderId: string) {
+export function useCancelItems(orderId: string, version?: number) {
   const client = useQueryClient()
   return useMutation({
     mutationFn: (request: CancelItemsRequest) =>
       api<CancelItemsReply>(`/api/orders/${encodeURIComponent(orderId)}/cancel-items`, {
         method: 'POST',
         body: request,
+        ifMatch: version,
       }),
     onSettled: () => {
       void client.invalidateQueries({ queryKey: keys.orders })

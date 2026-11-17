@@ -23,6 +23,7 @@ export const ORDER_ID = 'ORD-3f2a9c1e-1111-2222-3333-444455556666'
 export function order(overrides: Partial<Order> = {}): Order {
   return {
     orderId: ORDER_ID,
+    version: 4,
     customerId: 'CUST-100',
     status: 'CONFIRMED',
     orderType: 'STANDARD',

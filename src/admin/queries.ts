@@ -105,30 +105,37 @@ function useRefreshOrder() {
   }
 }
 
-export function useGoodwillRefund(orderId: string) {
+// The order actions below send the version the admin was shown (If-Match). When the order changed
+// since, nothing is done and it is reloaded, so they see what it is now before trying again.
+
+export function useGoodwillRefund(orderId: string, version?: number) {
   const refresh = useRefreshOrder()
   return useMutation({
     mutationFn: (refund: GoodwillRefund) =>
-      api<CreditNote>(`/api/admin/orders/${enc(orderId)}/refunds`, { method: 'POST', body: refund }),
-    onSuccess: () => refresh(orderId),
+      api<CreditNote>(`/api/admin/orders/${enc(orderId)}/refunds`, { method: 'POST', body: refund, ifMatch: version }),
+    onSettled: () => refresh(orderId),
   })
 }
 
-export function useReturnToStock(orderId: string) {
+export function useReturnToStock(orderId: string, version?: number) {
   const refresh = useRefreshOrder()
   return useMutation({
     mutationFn: () =>
-      api<{ status: OrderStatus; orderId: string }>(`/api/admin/orders/${enc(orderId)}/return`, { method: 'POST' }),
-    onSuccess: () => refresh(orderId),
+      api<{ status: OrderStatus; orderId: string }>(`/api/admin/orders/${enc(orderId)}/return`, {
+        method: 'POST',
+        ifMatch: version,
+      }),
+    onSettled: () => refresh(orderId),
   })
 }
 
-export function useAdminCancel(orderId: string) {
+export function useAdminCancel(orderId: string, version?: number) {
   const refresh = useRefreshOrder()
   return useMutation({
     mutationFn: () =>
       api<{ status: string; orderId: string; message: string }>(`/api/orders/${enc(orderId)}/cancel`, {
         method: 'POST',
+        ifMatch: version,
       }),
     onSettled: () => refresh(orderId),
   })
@@ -292,10 +299,11 @@ export function useDeliveryAttempts(orderId: string, enabled = true) {
 export function useAssignDriver() {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: ({ orderId, deliveryUserId }: { orderId: string; deliveryUserId: string }) =>
+    mutationFn: ({ orderId, deliveryUserId, version }: { orderId: string; deliveryUserId: string; version?: number }) =>
       api<unknown>(`/api/admin/delivery/orders/${enc(orderId)}/assign`, {
         method: 'POST',
         body: { deliveryUserId },
+        ifMatch: version,
       }),
     onSettled: (_d, _e, { orderId }) => {
       void client.invalidateQueries({ queryKey: adminKeys.all })

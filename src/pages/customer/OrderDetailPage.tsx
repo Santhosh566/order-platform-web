@@ -30,7 +30,7 @@ import type { Order, OrderStatus, ReturnRequest } from '../../api/types'
 import { AddressBlock } from '../../components/AddressBlock'
 import { LiveIndicator } from '../../components/LiveIndicator'
 import { QueryState } from '../../components/QueryState'
-import { errorMessage } from '../../lib/errors'
+import { notifyFailure } from '../../lib/notifyFailure'
 import { StatusBadge } from '../../components/StatusBadge'
 import { useCancelOrder, useCreditNotes, useOrder, useReturns } from '../../customer/queries'
 import { useLiveOrders } from '../../customer/useLiveOrders'
@@ -258,7 +258,7 @@ function OrderReturns({ order, returns }: { order: Order; returns: ReturnRequest
 
 
 function CancelButton({ order }: { order: Order }) {
-  const cancel = useCancelOrder(order.orderId)
+  const cancel = useCancelOrder(order.orderId, order.version)
   const paid = order.paymentTransactionId !== null
   const confirm = () =>
     modals.openConfirmModal({
@@ -278,7 +278,7 @@ function CancelButton({ order }: { order: Order }) {
           onSuccess: (reply) =>
             notifications.show({ color: 'green', title: 'Order cancelled', message: reply.message }),
           onError: (error) =>
-            notifications.show({ color: 'red', title: 'Could not cancel', message: errorMessage(error) }),
+            notifyFailure('Could not cancel', error),
         }),
     })
   return (

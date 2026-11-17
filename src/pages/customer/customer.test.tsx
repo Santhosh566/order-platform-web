@@ -125,6 +125,35 @@ describe('order page', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Cancel order' }))
 
     await waitFor(() => expect(backend.sent('POST', `/api/orders/${ORDER_ID}/cancel`)).toHaveLength(1))
+    // Sent with the version shown, so a cancel on an order that moved on is refused
+    expect(backend.sent('POST', `/api/orders/${ORDER_ID}/cancel`)[0].headers['If-Match']).toBe('"4"')
+  })
+
+  it('does not cancel an order that changed after it was opened, and shows it as it is now', async () => {
+    let current = order()
+    const backend = fakeBackend({
+      [`GET /api/orders/${ORDER_ID}`]: () => ({ body: current }),
+      'GET /api/returns': { body: [] },
+      [`POST /api/orders/${ORDER_ID}/cancel`]: () => {
+        // Meanwhile it left the warehouse
+        current = order({ status: 'IN_TRANSIT', version: 9 })
+        return {
+          status: 412,
+          body: { status: 'CHANGED', reason: 'changed', orderId: ORDER_ID, orderStatus: 'IN_TRANSIT', version: 9 },
+        }
+      },
+    })
+    const user = userEvent.setup()
+    renderRoutes(routes, `/orders/${ORDER_ID}`, customer())
+
+    await user.click(await screen.findByRole('button', { name: 'Cancel order' }))
+    await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Cancel order' }))
+
+    expect(await screen.findByText('This order changed')).toBeInTheDocument()
+    expect(screen.getByText(/changed after you opened it, and is now On the way/)).toBeInTheDocument()
+    // Reloaded by itself: the page now shows the order as it is, with nothing left to cancel
+    await waitFor(() => expect(backend.sent('GET', `/api/orders/${ORDER_ID}`).length).toBeGreaterThan(1))
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Cancel order' })).not.toBeInTheDocument())
   })
 
   it('cancels some items before dispatch, and shows the credit note', async () => {
