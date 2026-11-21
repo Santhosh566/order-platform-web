@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { routes } from '../../router'
-import { fakeBackend, graphqlReplies } from '../../test/fakeBackend'
+import { cartRoutes, fakeBackend, graphqlReplies } from '../../test/fakeBackend'
 import { ALICE_ADDRESS, CATALOG, ORDER_ID, card, order, productPage } from '../../test/fixtures'
 import { fakeAuth, renderRoutes } from '../../test/render'
 
@@ -18,7 +18,10 @@ afterEach(() => {
 
 describe('shop', () => {
   it('shows prices with GST, and adds to the cart', async () => {
-    fakeBackend({ 'POST /graphql': graphqlReplies({ products: productPage([card(), card({ sku: 'LAMP-01', name: 'Desk lamp', stockStatus: 'OUT_OF_STOCK' })]) }) })
+    const backend = fakeBackend({
+      ...cartRoutes(),
+      'POST /graphql': graphqlReplies({ products: productPage([card(), card({ sku: 'LAMP-01', name: 'Desk lamp', stockStatus: 'OUT_OF_STOCK' })]) }),
+    })
     const user = userEvent.setup()
     renderRoutes(routes, '/shop', customer())
 
@@ -29,9 +32,11 @@ describe('shop', () => {
     await user.click(within(card1).getByRole('button', { name: 'Add to cart' }))
 
     expect(await screen.findByRole('link', { name: 'Cart (1)' })).toBeInTheDocument()
-    expect(JSON.parse(window.localStorage.getItem(CART_KEY) ?? '[]')).toEqual([
-      { sku: 'PEN-01', name: 'Gel pen', unitPrice: 59, quantity: 1 },
-    ])
+    // Saved to the server's cart shortly after, so it follows Alice to her phone
+    await waitFor(() =>
+      expect(backend.sent('PUT', '/api/cart').at(-1)?.body).toEqual([{ sku: 'PEN-01', quantity: 1, priceSeen: 59 }]),
+    )
+    expect(window.localStorage.getItem(CART_KEY)).toBeNull()
   })
 })
 
@@ -48,6 +53,7 @@ describe('checkout', () => {
 
   it('shows today’s prices, then places the order to the saved address', async () => {
     const backend = fakeBackend({
+      ...cartRoutes(),
       'GET /api/public/catalog': { body: CATALOG },
       'POST /api/orders': { status: 202, body: { status: 'PENDING', orderId: ORDER_ID, currency: 'INR', total: 238 } },
       [`GET /api/orders/${ORDER_ID}`]: { body: order({ status: 'PENDING' }) },
@@ -72,11 +78,24 @@ describe('checkout', () => {
       shippingAddress: ALICE_ADDRESS,
     })
     expect((sent.body as { orderId: string }).orderId).toMatch(/^WEB-/)
+    // The cart this browser kept was merged into the server's once, and the server's is emptied after the order
+    expect(backend.sent('POST', '/api/cart/merge')).toHaveLength(1)
     expect(window.localStorage.getItem(CART_KEY)).toBeNull()
+    await waitFor(() => expect(backend.sent('PUT', '/api/cart').at(-1)?.body).toEqual([]))
+  })
+
+  it('applies the coupon from a cart reminder link', async () => {
+    const backend = fakeBackend({ ...cartRoutes(), 'GET /api/public/catalog': { body: CATALOG } })
+    renderRoutes(routes, '/cart?coupon=cartx7k2qp', customer())
+
+    await waitFor(() =>
+      expect(backend.sent('POST', '/api/checkout/quote').at(-1)?.body).toMatchObject({ couponCode: 'CARTX7K2QP' }),
+    )
   })
 
   it('treats a duplicate reference as an order that already went through', async () => {
     fakeBackend({
+      ...cartRoutes(),
       'GET /api/public/catalog': { body: CATALOG },
       'POST /api/orders': { status: 409, body: { status: 'DUPLICATE', orderReference: 'WEB-1' } },
       'GET /api/orders': { body: [] },

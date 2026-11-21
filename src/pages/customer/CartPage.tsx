@@ -18,7 +18,7 @@ import {
 import { notifications } from '@mantine/notifications'
 import { IconAlertTriangle, IconInfoCircle, IconShoppingCart, IconTrash } from '@tabler/icons-react'
 import { useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { api, ApiError } from '../../api/client'
 import type { ShippingAddress } from '../../api/types'
 import { useAuth } from '../../auth/AuthContext'
@@ -78,7 +78,9 @@ export function CartPage() {
   const acceptPrices = () =>
     cart.reprice(new Map(changes.map((c) => [c.sku, { name: c.name, unitPrice: c.now }])))
   const address = choice === 'saved' ? savedAddress : otherAddress
-  const [coupon, setCoupon] = useState<string | null>(null)
+  // A cart reminder email links here with its coupon: /cart?coupon=CARTX7K2QP
+  const [searchParams] = useSearchParams()
+  const [coupon, setCoupon] = useState<string | null>(() => searchParams.get('coupon')?.trim().toUpperCase() || null)
   const [payment, setPayment] = useState<PaymentMethod>('PREPAID')
   const [slot, setSlot] = useState<ChosenSlot | null>(null)
   // Store credit pays first when there is any, unless the customer unticks it

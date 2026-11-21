@@ -9,6 +9,7 @@ import {
   Select,
   SimpleGrid,
   Stack,
+  Switch,
   Text,
   TextInput,
   Title,
@@ -210,6 +211,20 @@ function ProfileForm({ profile }: { profile: Profile }) {
                 )}
               />
             </SimpleGrid>
+          )}
+          {parts.customer && (
+            <Controller
+              control={control}
+              name="cartReminders"
+              render={({ field }) => (
+                <Switch
+                  label="Cart reminders"
+                  description="An email when you leave items in your cart, sometimes with an offer. Order emails are sent either way."
+                  checked={field.value}
+                  onChange={(event) => field.onChange(event.currentTarget.checked)}
+                />
+              )}
+            />
           )}
         </Section>
 

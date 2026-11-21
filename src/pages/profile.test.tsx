@@ -64,13 +64,17 @@ describe('profile', () => {
     await user.clear(phone)
     await user.type(phone, '98450 00101')
     await user.type(screen.getByLabelText(/Date of birth/), '1990-04-12')
+    // On unless she turns it off
+    const reminders = screen.getByRole('switch', { name: /Cart reminders/ })
+    expect(reminders).toBeChecked()
+    await user.click(reminders)
     await user.click(screen.getByRole('button', { name: 'Save profile' }))
 
     await waitFor(() => expect(backend.sent('PUT', '/api/me/profile')).toHaveLength(1))
     expect(backend.sent('PUT', '/api/me/profile')[0].body).toEqual({
       fullName: 'Alice Rao',
       phone: '98450 00101',
-      customer: { dateOfBirth: '1990-04-12', gender: null },
+      customer: { dateOfBirth: '1990-04-12', gender: null, cartReminders: false },
     })
     await waitFor(() => expect(refreshMe).toHaveBeenCalled())
   })

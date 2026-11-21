@@ -77,3 +77,54 @@ const NO_REVIEWS = {
   rating: { average: 0, count: 0, distribution: [0, 0, 0, 0, 0], reviewCount: 0 },
   reviews: { items: [], totalItems: 0, totalPages: 0, page: 0, size: 5 },
 }
+
+interface FakeCartLine {
+  sku: string
+  quantity: number
+  priceSeen: number
+}
+
+/**
+ * Routes for /api/cart that keep one cart like the server does: PUT replaces it, a merge keeps the larger
+ * quantity, and a line keeps the price it was put in at. Spread into fakeBackend({...cartRoutes(), ...}).
+ */
+export function cartRoutes(initial: FakeCartLine[] = []): Record<string, Reply> {
+  let lines = [...initial]
+  const reply = () => ({
+    body: {
+      lines: lines.map((l) => ({
+        sku: l.sku,
+        name: l.sku,
+        quantity: l.quantity,
+        priceSeen: l.priceSeen,
+        product: { sku: l.sku, name: l.sku, price: l.priceSeen, stockStatus: 'IN_STOCK' },
+        available: true,
+        priceDropped: false,
+      })),
+      itemCount: lines.reduce((n, l) => n + l.quantity, 0),
+      total: lines.reduce((n, l) => n + l.priceSeen * l.quantity, 0),
+      updatedAt: null,
+    },
+  })
+  const keep = (sent: FakeCartLine[]) =>
+    sent.map((s) => ({ ...s, priceSeen: lines.find((l) => l.sku === s.sku)?.priceSeen ?? s.priceSeen }))
+  return {
+    'GET /api/cart': () => reply(),
+    'PUT /api/cart': (call) => {
+      lines = keep(call.body as FakeCartLine[])
+      return reply()
+    },
+    'POST /api/cart/merge': (call) => {
+      for (const s of call.body as FakeCartLine[]) {
+        const found = lines.find((l) => l.sku === s.sku)
+        if (found) found.quantity = Math.max(found.quantity, s.quantity)
+        else lines.push({ ...s })
+      }
+      return reply()
+    },
+    'DELETE /api/cart': () => {
+      lines = []
+      return { status: 204 }
+    },
+  }
+}

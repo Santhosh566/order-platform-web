@@ -6,6 +6,8 @@ export type VehicleType = 'BIKE' | 'SCOOTER' | 'EV_SCOOTER' | 'CYCLE' | 'CAR' | 
 export interface CustomerPart {
   dateOfBirth: string | null
   gender: Gender | null
+  /** Emails about a cart left without ordering, with their offers; order emails go out regardless */
+  cartReminders?: boolean | null
 }
 
 export interface DriverPart {

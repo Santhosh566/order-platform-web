@@ -32,6 +32,7 @@ export function profileSchema(roles: { customer: boolean; driver: boolean; staff
       phone: z.string(),
       dateOfBirth: z.string(),
       gender: z.string(),
+      cartReminders: z.boolean(),
       vehicleType: z.string(),
       vehicleNumber: z.string(),
       licenceNumber: z.string(),
@@ -76,6 +77,7 @@ export function toFormValues(profile: Profile): ProfileValues {
     phone: profile.phone ?? '',
     dateOfBirth: profile.customer?.dateOfBirth ?? '',
     gender: profile.customer?.gender ?? '',
+    cartReminders: profile.customer?.cartReminders ?? true,
     vehicleType: profile.driver?.vehicleType ?? '',
     vehicleNumber: profile.driver?.vehicleNumber ?? '',
     licenceNumber: profile.driver?.licenceNumber ?? '',
@@ -92,7 +94,11 @@ const orNull = (value: string) => (value.trim() ? value.trim() : null)
 export function toUpdate(values: ProfileValues, profile: Profile): ProfileUpdate {
   const update: ProfileUpdate = { fullName: values.fullName.trim(), phone: orNull(values.phone) }
   if (profile.customer) {
-    update.customer = { dateOfBirth: orNull(values.dateOfBirth), gender: (orNull(values.gender) as Gender | null) }
+    update.customer = {
+      dateOfBirth: orNull(values.dateOfBirth),
+      gender: orNull(values.gender) as Gender | null,
+      cartReminders: values.cartReminders,
+    }
   }
   if (profile.driver) {
     update.driver = {

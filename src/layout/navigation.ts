@@ -1,4 +1,5 @@
 import {
+  IconShoppingCartExclamation,
   IconChartBar,
   IconArrowBackUp,
   IconBuildingWarehouse,
@@ -62,6 +63,7 @@ const SECTIONS: Record<Exclude<Role, 'SERVICE'>, NavSection> = {
       { label: 'Coupons', to: '/admin/coupons', icon: IconDiscount },
       { label: 'Gift cards', to: '/admin/gift-cards', icon: IconGift },
       { label: 'Promotions', to: '/admin/promotions', icon: IconSpeakerphone },
+      { label: 'Abandoned carts', to: '/admin/carts', icon: IconShoppingCartExclamation },
       { label: 'Deliveries', to: '/admin/deliveries', icon: IconBuildingWarehouse },
       { label: 'Delivery holidays', to: '/admin/holidays', icon: IconCalendarOff },
       { label: 'Users', to: '/admin/users', icon: IconUsers },

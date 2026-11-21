@@ -43,7 +43,7 @@ describe('rating a delivery', () => {
       'GET /api/delivery-ratings/ORD-1': { body: { ...OPEN, canRate: false, driverName: null, reason: 'Only orders our own drivers delivered can be rated' } },
     })
     const { container } = renderWithProviders(<RateDelivery orderId="ORD-1" />, fakeAuth(['CUSTOMER']))
-    await waitFor(() => expect(backend.calls).toHaveLength(1))
+    await waitFor(() => expect(backend.sent('GET', '/api/delivery-ratings/ORD-1')).toHaveLength(1))
     expect(container.textContent).not.toContain('Your delivery')
   })
 })
