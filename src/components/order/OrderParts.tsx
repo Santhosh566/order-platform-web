@@ -56,6 +56,11 @@ export function Items({ order }: { order: Order }) {
                           {item.sku}
                           {item.hsnCode && <> · HSN {item.hsnCode}</>}
                         </Text>
+                        {item.addedAt && (
+                          <Badge size="xs" variant="light" color="teal" title={`Added ${formatDate(item.addedAt)}`}>
+                            Added later
+                          </Badge>
+                        )}
                       </div>
                     </Group>
                   </Table.Td>

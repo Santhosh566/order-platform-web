@@ -32,6 +32,7 @@ import {
 import { AddressBlock } from '../../components/AddressBlock'
 import { LiveIndicator } from '../../components/LiveIndicator'
 import { CreditNotes, Fact, InvoiceButton, Items, PaymentAndSlot } from '../../components/order/OrderParts'
+import { ChangeOrderMenu, OrderChangeHistory } from '../../components/order/OrderChanges'
 import { QueryState } from '../../components/QueryState'
 import { StatusBadge } from '../../components/StatusBadge'
 import { useCreditNotes, useOrder } from '../../customer/queries'
@@ -99,6 +100,7 @@ function AdminOrderView({ order, live }: { order: AdminOrder; live: ReactElement
             </Button>
           )}
           {order.status === 'DELIVERY_FAILED' && <ReturnToStockButton order={order} />}
+          <ChangeOrderMenu order={order} staff />
           {canCancelItems(order) && (
             <Button variant="default" leftSection={<IconListCheck size={18} />} onClick={() => setCancelItemsOpen(true)}>
               Cancel items
@@ -190,6 +192,8 @@ function AdminOrderView({ order, live }: { order: AdminOrder; live: ReactElement
           </Stack>
         </Grid.Col>
       </Grid>
+
+      <OrderChangeHistory order={order} staff />
 
       <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="md">
         {(attempts.data?.length ?? 0) > 0 && (

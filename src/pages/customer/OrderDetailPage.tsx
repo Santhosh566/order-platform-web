@@ -50,6 +50,7 @@ import {
   shortOrderId,
 } from '../../lib/orderStatus'
 import { CreditNotes, Fact, InvoiceButton, Items, PaymentAndSlot } from '../../components/order/OrderParts'
+import { ChangeOrderMenu, OrderChangeHistory } from '../../components/order/OrderChanges'
 import { ReturnDialog } from './ReturnDialog'
 import { ReturnStatusBadge } from '../../components/ReturnStatusBadge'
 import { describeRefund } from '../../wallet/refundSplit'
@@ -106,6 +107,7 @@ function OrderView({ order, live }: { order: Order; live: ReactNode }) {
               Return items
             </Button>
           )}
+          <ChangeOrderMenu order={order} />
           {canCancelItems(order) && (
             <Button variant="default" leftSection={<IconListCheck size={18} />} onClick={() => setCancelItemsOpen(true)}>
               Cancel items
@@ -166,6 +168,8 @@ function OrderView({ order, live }: { order: Order; live: ReactNode }) {
           </Stack>
         </Grid.Col>
       </Grid>
+
+      <OrderChangeHistory order={order} />
 
       {(orderReturns.length > 0 || (creditNotes.data?.length ?? 0) > 0) && (
         <SimpleGrid cols={{ base: 1, lg: 2 }} spacing="md">

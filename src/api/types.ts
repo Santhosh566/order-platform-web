@@ -123,6 +123,8 @@ export interface OrderItem {
   cancelledQuantity: number
   /** quantity − cancelledQuantity: the units still coming */
   activeQuantity: number
+  /** Set on a line added after the order was placed */
+  addedAt?: string | null
 }
 
 /** GET /api/orders/{id} */
