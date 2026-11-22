@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { accessToken } from '../api/client'
 import type { Order } from '../api/types'
 import { keys } from './queries'
+import { driversOnRoadKey, trackingKey, type Tracking } from '../tracking/queries'
 
 export type LiveState = 'connecting' | 'live' | 'offline'
 
@@ -51,6 +52,17 @@ export function useLiveOrders(): LiveState {
         // Admin screens: lists, counts and the delivery board (only those on screen refetch)
         void client.invalidateQueries({ queryKey: ['admin'] })
       })
+      // A driver moved: a customer gets their order's new map, an admin a nudge to reload the ones on screen
+      source.addEventListener('DRIVER_LOCATION', (event) => {
+        const data = parseObject((event as MessageEvent<string>).data)
+        if (!data || typeof data.orderId !== 'string') return
+        if ('live' in data) {
+          client.setQueryData(trackingKey(data.orderId), data as unknown as Tracking)
+        } else {
+          void client.invalidateQueries({ queryKey: trackingKey(data.orderId) })
+          void client.invalidateQueries({ queryKey: driversOnRoadKey })
+        }
+      })
       // Admins also hear about dead letters and routes; the operations screen refetches
       for (const name of ['DLQ_UPDATED', 'DLQ_REPLAYED', 'ROUTE_UPDATED']) {
         source.addEventListener(name, () => void client.invalidateQueries({ queryKey: ['admin'] }))
@@ -74,6 +86,15 @@ export function useLiveOrders(): LiveState {
   }, [client])
 
   return state
+}
+
+function parseObject(data: string): Record<string, unknown> | null {
+  try {
+    const value: unknown = JSON.parse(data)
+    return value && typeof value === 'object' ? (value as Record<string, unknown>) : null
+  } catch {
+    return null
+  }
 }
 
 function parse(data: string): Order | null {

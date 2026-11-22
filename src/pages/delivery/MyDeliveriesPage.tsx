@@ -28,6 +28,8 @@ import { shortOrderId } from '../../lib/orderStatus'
 import { CodeEntry } from './CodeEntry'
 import { DeliveryTerms } from './DeliveryTerms'
 import { MyPickupCard } from './PickupCards'
+import { LocationSharingBanner } from '../../tracking/LocationSharingBanner'
+import { useShareLocation } from '../../tracking/useShareLocation'
 
 type Failing = { kind: 'delivery'; item: MyDelivery } | { kind: 'pickup'; item: MyPickup }
 
@@ -37,10 +39,13 @@ export function MyDeliveriesPage() {
   const pickups = useMyPickups()
   const [failing, setFailing] = useState<Failing | null>(null)
   const pickupRows = pickups.data ?? []
+  // Customers can follow the driver while any parcel is out for delivery, and only then
+  const sharing = useShareLocation((mine.data ?? []).some((d) => d.status === 'OUT_FOR_DELIVERY'))
 
   return (
     <Stack gap="md" maw={560}>
       <Title order={2}>My deliveries</Title>
+      <LocationSharingBanner sharing={sharing} />
       <QueryState query={mine}>
         {(rows) =>
           rows.length === 0 && pickupRows.length === 0 ? (

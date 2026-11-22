@@ -1,0 +1,91 @@
+/* The delivery map (TrackingMap.tsx) */
+
+.tm-map {
+  border-radius: var(--mantine-radius-md);
+  z-index: 0; /* below Mantine menus and modals */
+  background: var(--mantine-color-gray-1);
+}
+
+.tm-map .leaflet-control-attribution {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.tm-map .leaflet-control-zoom a {
+  width: 28px;
+  height: 28px;
+  line-height: 28px;
+}
+
+/* The driver: a blue badge with a scooter, and a ring that pulses while their phone is sending */
+.tm-driver {
+  position: relative;
+  width: 40px;
+  height: 40px;
+}
+
+.tm-driver .tm-badge {
+  position: absolute;
+  inset: 4px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #1c7ed6;
+  color: #fff;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.tm-driver .tm-pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(28, 126, 214, 0.35);
+  animation: tm-pulse 2s ease-out infinite;
+}
+
+.tm-driver.tm-stale .tm-badge {
+  background: #868e96;
+}
+
+@keyframes tm-pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tm-driver .tm-pulse {
+    animation: none;
+  }
+}
+
+/* The customer's area: an orange pin with a house */
+.tm-home {
+  width: 34px;
+  height: 42px;
+  display: flex;
+  justify-content: center;
+}
+
+.tm-home .tm-pin {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: #e8590c;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  color: #fff;
+}
+
+.tm-home .tm-pin svg {
+  transform: rotate(45deg);
+}

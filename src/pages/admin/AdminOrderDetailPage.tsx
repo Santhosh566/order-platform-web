@@ -44,6 +44,7 @@ import { canCancelItems, hasInvoice, isCancellable, shortOrderId, statusLabel } 
 import { CancelItemsDialog } from '../../components/order/CancelItemsDialog'
 import { ReturnStatusBadge } from '../../components/ReturnStatusBadge'
 import { AssignDriver } from './AssignDriver'
+import { LiveTrackingCard } from '../../tracking/LiveTrackingCard'
 
 type AdminOrder = Order & Partial<AdminOrderExtras>
 
@@ -128,6 +129,8 @@ function AdminOrderView({ order, live }: { order: AdminOrder; live: ReactElement
           </Group>
         </Paper>
       )}
+
+      <LiveTrackingCard orderId={order.orderId} status={order.status} />
 
       <Grid gap="md">
         <Grid.Col span={{ base: 12, lg: 8 }}>

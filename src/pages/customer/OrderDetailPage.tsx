@@ -1,5 +1,6 @@
 import { RateDelivery } from '../../delivery/RateDelivery'
 import { DeliveryPartnerCard } from '../../delivery/DeliveryPartnerCard'
+import { LiveTrackingCard } from '../../tracking/LiveTrackingCard'
 import {
   Alert,
   Anchor,
@@ -118,6 +119,8 @@ function OrderView({ order, live }: { order: Order; live: ReactNode }) {
       </Group>
 
       <Progress order={order} />
+
+      <LiveTrackingCard orderId={order.orderId} status={order.status} />
 
       <Grid gap="md">
         <Grid.Col span={{ base: 12, lg: 8 }}>

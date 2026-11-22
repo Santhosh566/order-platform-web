@@ -15,6 +15,7 @@ import { useLiveOrders } from '../../customer/useLiveOrders'
 import { formatDateTime } from '../../lib/format'
 import { shortOrderId } from '../../lib/orderStatus'
 import { AssignDriver } from './AssignDriver'
+import { DriversOnRoadMap } from '../../tracking/DriversOnRoadMap'
 
 /**
  * The delivery board: orders nobody holds yet, deliveries under way (reassignable until the
@@ -34,6 +35,8 @@ export function DeliveriesPage() {
         <Title order={2}>Deliveries</Title>
         <LiveIndicator state={live} />
       </Group>
+
+      <DriversOnRoadMap />
 
       <Paper withBorder radius="md" p="md">
         <Title order={4} mb="sm">
