@@ -180,6 +180,8 @@ export interface DeliveryEstimate {
   latest: string | null
   approximate: boolean
   minutesToCutOff: number | null
+  /** The warehouse that would ship it: the nearest one with it in stock */
+  shipsFrom?: string | null
   /** Public holidays the dates skip, from today to the latest day */
   holidays: Array<{ date: string; name: string }>
 }
@@ -187,7 +189,7 @@ export interface DeliveryEstimate {
 export const DELIVERY_QUERY = `
   query Delivery($sku: ID!, $pin: String!) {
     deliveryEstimate(sku: $sku, pin: $pin) {
-      outcome pin district state earliest latest approximate minutesToCutOff holidays { date name }
+      outcome pin district state earliest latest approximate minutesToCutOff shipsFrom holidays { date name }
     }
   }`
 

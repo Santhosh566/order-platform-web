@@ -92,6 +92,11 @@ function EstimateText({ estimate: e }: { estimate: DeliveryEstimate }) {
           {e.minutesToCutOff % 60} min and it leaves today.
         </Text>
       )}
+      {e.shipsFrom && (
+        <Text size="xs" c="dimmed">
+          Ships from our {e.shipsFrom}.
+        </Text>
+      )}
       {e.holidays.length > 0 && (
         <Text size="xs" c="dimmed">
           No deliveries on {e.holidays.map((h) => `${h.name} (${formatDate(h.date)})`).join(', ')}.

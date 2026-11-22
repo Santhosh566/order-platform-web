@@ -35,6 +35,10 @@ export interface Quote {
   /** Why the coupon asked for was not applied */
   couponError: string | null
   cashOnDelivery: { available: boolean; reason: string | null; maxOrderValue: number }
+  /** The warehouse it ships from: the nearest that has everything; null when none has */
+  shipsFrom?: { code: string; name: string; stateCode: string } | null
+  /** Everything is in stock, but not in one warehouse: the order would be refused, so the customer splits it */
+  shippingProblem?: string | null
 }
 
 export interface SlotWindow {

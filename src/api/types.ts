@@ -133,6 +133,8 @@ export interface Order {
   /** Raised by every change; sent back as If-Match with an action, so one on an older copy is refused */
   version: number
   customerId: string
+  /** The warehouse it is packed and shipped from */
+  warehouseId?: number | null
   status: OrderStatus
   orderType: string | null
   currency: string

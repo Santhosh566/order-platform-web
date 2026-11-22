@@ -57,6 +57,7 @@ const SECTIONS: Record<Exclude<Role, 'SERVICE'>, NavSection> = {
       { label: 'Dashboard', to: '/admin', icon: IconDashboard },
       { label: 'Orders', to: '/admin/orders', icon: IconListDetails },
       { label: 'Catalogue & stock', to: '/admin/catalog', icon: IconPackage },
+      { label: 'Warehouses', to: '/admin/warehouses', icon: IconBuildingWarehouse },
       { label: 'Categories', to: '/admin/categories', icon: IconCategory },
       { label: 'Returns & refunds', to: '/admin/returns', icon: IconArrowBackUp },
       { label: 'Reviews', to: '/admin/reviews', icon: IconMessageStar },

@@ -9,7 +9,7 @@ export interface MapPoint {
   latitude: number
   longitude: number
   label: string
-  kind: 'driver' | 'destination'
+  kind: 'driver' | 'destination' | 'warehouse'
   /** A driver not heard from for a few minutes is drawn grey, without the pulse */
   stale?: boolean
   /** The destination is an area (the PIN code's middle), drawn as a soft circle of this radius */
@@ -36,11 +36,21 @@ const ORANGE = '#e8590c'
 // Tabler "scooter" and "home" outlines, drawn inside the markers
 const SCOOTER =
   '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M6 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M8 17h5a6 6 0 0 1 5 -5v-5a2 2 0 0 0 -2 -2h-1"/></svg>'
+const BUILDING =
+  '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21v-12l7 -4l7 4v12"/><path d="M9 21v-6h6v6"/></svg>'
 const HOME =
   '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l-2 0l9 -9l9 9l-2 0"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"/></svg>'
 
 /** Markers drawn with HTML and CSS (tracking.css), so no marker images are needed */
 function icon(point: MapPoint) {
+  if (point.kind === 'warehouse') {
+    return divIcon({
+      className: '',
+      html: `<div class="tm-warehouse${point.stale ? ' tm-closed' : ''}">${BUILDING}</div>`,
+      iconSize: [32, 32],
+      iconAnchor: [16, 16],
+    })
+  }
   if (point.kind === 'driver') {
     return divIcon({
       className: '',
@@ -108,7 +118,7 @@ export default function TrackingMap({ points, height = 360, line = false }: { po
           zIndexOffset={p.kind === 'driver' ? 1000 : 0}
           keyboard={false}
         >
-          <Tooltip direction="top" offset={[0, p.kind === 'driver' ? -18 : -38]}>
+          <Tooltip direction="top" offset={[0, p.kind === 'destination' ? -38 : -18]}>
             {p.label}
           </Tooltip>
         </Marker>

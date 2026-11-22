@@ -112,11 +112,23 @@ export interface PriceView {
   createdAt: string | null
 }
 
-export type MovementType = 'OPENING' | 'RECEIPT' | 'ADJUSTMENT' | 'WRITE_OFF' | 'RESERVE' | 'RELEASE' | 'SHIP' | 'RETURN'
+export type MovementType =
+  | 'OPENING'
+  | 'RECEIPT'
+  | 'ADJUSTMENT'
+  | 'WRITE_OFF'
+  | 'RESERVE'
+  | 'RELEASE'
+  | 'SHIP'
+  | 'RETURN'
+  | 'TRANSFER_OUT'
+  | 'TRANSFER_IN'
 
 export interface StockMovement {
   id: number
   sku: string
+  /** The warehouse whose stock changed; availableAfter and reservedAfter are its balances */
+  warehouseId?: number
   type: MovementType
   availableChange: number
   reservedChange: number
@@ -186,6 +198,8 @@ export interface StockChange {
   type: ManualStockType
   quantity: number
   reason?: string
+  /** The warehouse whose stock changes; the default one when left out */
+  warehouseId?: number
 }
 
 // ── Returns ──────────────────────────────────────────────────────────────────
@@ -249,6 +263,9 @@ export interface Driver {
   fullName: string
   phone: string | null
   activeDeliveries: number
+  /** The warehouse they work from */
+  warehouseId?: number
+  warehouse?: string
 }
 
 /** GET /api/admin/delivery/orders/{id}/attempts */

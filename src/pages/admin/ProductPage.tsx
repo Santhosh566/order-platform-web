@@ -57,6 +57,7 @@ import { categoryOptions } from '../../lib/images'
 import { shortOrderId } from '../../lib/orderStatus'
 import { ProductPhotos } from './ProductPhotos'
 import { ProductSpecs } from './ProductSpecs'
+import { usePublicWarehouses, useStockByWarehouse } from '../../warehouses/queries'
 
 export function ProductPage() {
   const { sku = '' } = useParams()
@@ -82,6 +83,7 @@ export function ProductPage() {
                     specs={data.specs}
                     suggested={data.suggestedSpecs}
                   />
+                  <StockByWarehouse sku={data.product.sku} />
                   <StockForm product={data.product} />
                 </Stack>
               </Grid.Col>
@@ -494,8 +496,49 @@ const STOCK_TYPES = [
   { value: 'WRITE_OFF', label: 'Write-off (damaged, lost)' },
 ]
 
+/** How much of the product each warehouse holds; the totals above are their sum. */
+function StockByWarehouse({ sku }: { sku: string }) {
+  const stock = useStockByWarehouse(sku)
+  return (
+    <Paper withBorder radius="md" p="md">
+      <Title order={4} mb="sm">
+        Stock by warehouse
+      </Title>
+      <QueryState query={stock}>
+        {(rows) => (
+          <Table verticalSpacing={4} aria-label="Stock by warehouse">
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Warehouse</Table.Th>
+                <Table.Th ta="right">Available</Table.Th>
+                <Table.Th ta="right">Reserved</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {rows.map((w) => (
+                <Table.Tr key={w.warehouseId}>
+                  <Table.Td>
+                    <Text size="sm" c={w.active ? undefined : 'dimmed'}>
+                      {w.code} · {w.name}
+                      {!w.active && ' (closed)'}
+                    </Text>
+                  </Table.Td>
+                  <Table.Td ta="right">{w.available}</Table.Td>
+                  <Table.Td ta="right">{w.reserved}</Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        )}
+      </QueryState>
+    </Paper>
+  )
+}
+
 function StockForm({ product }: { product: ProductView }) {
   const change = useChangeStock(product.sku)
+  const warehouses = usePublicWarehouses()
+  const [warehouseId, setWarehouseId] = useState<string | null>(null)
   const {
     register,
     control,
@@ -510,7 +553,12 @@ function StockForm({ product }: { product: ProductView }) {
 
   const submit = handleSubmit((values) =>
     change.mutate(
-      { type: values.type, quantity: values.quantity, reason: values.reason || undefined },
+      {
+        type: values.type,
+        quantity: values.quantity,
+        reason: values.reason || undefined,
+        warehouseId: warehouseId ? Number(warehouseId) : undefined,
+      },
       {
         onSuccess: (movement) => {
           notifications.show({
@@ -560,6 +608,16 @@ function StockForm({ product }: { product: ProductView }) {
               )}
             />
           </SimpleGrid>
+          {(warehouses.data?.length ?? 0) > 1 && (
+            <Select
+              label="Warehouse"
+              placeholder="The default warehouse"
+              data={(warehouses.data ?? []).map((w) => ({ value: String(w.id), label: `${w.code} · ${w.name}` }))}
+              value={warehouseId}
+              onChange={setWarehouseId}
+              clearable
+            />
+          )}
           <TextInput
             label="Reason"
             withAsterisk={type !== 'RECEIPT'}
@@ -592,11 +650,15 @@ const MOVEMENT_LABEL: Record<MovementType, string> = {
   RELEASE: 'Released',
   SHIP: 'Shipped',
   RETURN: 'Returned',
+  TRANSFER_OUT: 'Sent to another warehouse',
+  TRANSFER_IN: 'Arrived from another warehouse',
 }
 
 function Movements({ sku }: { sku: string }) {
   const [page, setPage] = useState(1)
   const movements = useMovements(sku, page - 1)
+  const warehouses = usePublicWarehouses()
+  const codeOf = (id?: number) => warehouses.data?.find((w) => w.id === id)?.code ?? '—'
   return (
     <Paper withBorder radius="md" p="md">
       <Title order={4} mb={4}>
@@ -614,6 +676,7 @@ function Movements({ sku }: { sku: string }) {
                   <Table.Tr>
                     <Table.Th>When</Table.Th>
                     <Table.Th>What</Table.Th>
+                    <Table.Th>Warehouse</Table.Th>
                     <Table.Th ta="right">Available</Table.Th>
                     <Table.Th ta="right">Reserved</Table.Th>
                     <Table.Th>Order / reason</Table.Th>
@@ -627,6 +690,7 @@ function Movements({ sku }: { sku: string }) {
                         <Text size="xs">{formatDateTime(m.createdAt)}</Text>
                       </Table.Td>
                       <Table.Td>{MOVEMENT_LABEL[m.type] ?? m.type}</Table.Td>
+                      <Table.Td>{codeOf(m.warehouseId)}</Table.Td>
                       <Table.Td ta="right">
                         <Change value={m.availableChange} /> → {m.availableAfter}
                       </Table.Td>

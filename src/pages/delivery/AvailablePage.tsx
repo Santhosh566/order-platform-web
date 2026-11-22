@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router'
 import type { AvailableDelivery } from '../../api/adminTypes'
 import { ApiError } from '../../api/client'
 import { QueryState } from '../../components/QueryState'
-import { useAvailable, useAvailablePickups, useDriverAction, useMine, useMyPickups } from '../../delivery/queries'
+import { useAvailable, useAvailablePickups, useDriverAction, useMine, useMyPickups, useMyWarehouse } from '../../delivery/queries'
 import { AvailablePickupCard } from './PickupCards'
 import { errorMessage } from '../../lib/errors'
 import { formatDateTime } from '../../lib/format'
@@ -28,6 +28,7 @@ export function AvailablePage() {
     <Stack gap="md" maw={560}>
       <div>
         <Title order={2}>Available orders</Title>
+        <WarehouseLine />
         <Text size="sm" c="dimmed">
           Deliveries start at the hub; return pickups start at the customer. The lists refresh every 30 seconds.
         </Text>
@@ -122,5 +123,19 @@ function AvailableCard({ delivery }: { delivery: AvailableDelivery }) {
         </Button>
       </Stack>
     </Card>
+  )
+}
+
+/** The warehouse the driver works from: only its deliveries and returns are listed. */
+function WarehouseLine() {
+  const warehouse = useMyWarehouse()
+  if (!warehouse.data) return null
+  return (
+    <Group gap={6} mt={4}>
+      <IconMapPin size={16} />
+      <Text size="sm">
+        You work from <b>{warehouse.data.name}</b>, {warehouse.data.address}
+      </Text>
+    </Group>
   )
 }

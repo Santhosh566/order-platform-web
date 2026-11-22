@@ -29,6 +29,7 @@ import { GENDER_LABELS, VEHICLE_LABELS } from '../../profile/types'
 import { UserAvatar } from '../../profile/UserAvatar'
 import { useAdjustWallet, useUserWallet } from '../../wallet/queries'
 import { WalletHistory } from '../../wallet/WalletHistory'
+import { DriverWarehouse } from '../../warehouses/ShipsFrom'
 
 const dash = (value: string | null | undefined) => (value ? value : '—')
 
@@ -125,6 +126,7 @@ function UserView({ detail }: { detail: UserDetail }) {
                   hint={driver.ratingCount ? `${driver.ratingCount} ratings` : 'No ratings yet'}
                 />
               </SimpleGrid>
+              <DriverWarehouse userId={profile.userId} />
               <Fact label="Earned in total" value={formatMoney(driver.earnings, 'INR')} />
               <Fact label="Last delivery" value={driver.lastDeliveryAt ? formatDateTime(driver.lastDeliveryAt) : '—'} />
               <Fact

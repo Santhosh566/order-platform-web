@@ -45,6 +45,7 @@ import { CancelItemsDialog } from '../../components/order/CancelItemsDialog'
 import { ReturnStatusBadge } from '../../components/ReturnStatusBadge'
 import { AssignDriver } from './AssignDriver'
 import { LiveTrackingCard } from '../../tracking/LiveTrackingCard'
+import { ShipsFrom } from '../../warehouses/ShipsFrom'
 
 type AdminOrder = Order & Partial<AdminOrderExtras>
 
@@ -177,6 +178,7 @@ function AdminOrderView({ order, live }: { order: AdminOrder; live: ReactElement
                     {order.trackingNumber && <> · {order.trackingNumber}</>}
                   </Text>
                 )}
+                <ShipsFrom warehouseId={order.warehouseId} />
                 {order.deliveredAt && <Text size="sm">Delivered {formatDateTime(order.deliveredAt)}</Text>}
               </Stack>
             </Paper>

@@ -13,6 +13,22 @@ export const driverKeys = {
  */
 const REFRESH_MS = 30_000
 
+/** GET /api/delivery/warehouse: where the driver collects parcels and brings returns */
+export interface DriverWarehouse {
+  id: number
+  code: string
+  name: string
+  address: string
+}
+
+export function useMyWarehouse() {
+  return useQuery({
+    queryKey: ['delivery', 'warehouse'],
+    queryFn: ({ signal }) => api<DriverWarehouse>('/api/delivery/warehouse', { signal }),
+    staleTime: 5 * 60_000,
+  })
+}
+
 export function useAvailable() {
   return useQuery({
     queryKey: driverKeys.available,

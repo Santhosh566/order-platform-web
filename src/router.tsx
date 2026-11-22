@@ -40,6 +40,7 @@ const HolidaysPage = load(() => import('./pages/admin/HolidaysPage'), 'HolidaysP
 const CouponsPage = load(() => import('./pages/admin/CouponsPage'), 'CouponsPage')
 const PromotionsPage = load(() => import('./pages/admin/PromotionsPage'), 'PromotionsPage')
 const AbandonedCartsPage = load(() => import('./pages/admin/AbandonedCartsPage'), 'AbandonedCartsPage')
+const WarehousesPage = load(() => import('./pages/admin/WarehousesPage'), 'WarehousesPage')
 const DeliveriesPage = load(() => import('./pages/admin/DeliveriesPage'), 'DeliveriesPage')
 const OperationsPage = load(() => import('./pages/admin/OperationsPage'), 'OperationsPage')
 const AvailablePage = load(() => import('./pages/delivery/AvailablePage'), 'AvailablePage')
@@ -95,6 +96,7 @@ export const routes: RouteObject[] = [
       screen('admin/gift-cards', ADMIN, <GiftCardsPage />),
       screen('admin/promotions', ADMIN, <PromotionsPage />),
       screen('admin/carts', ADMIN, <AbandonedCartsPage />),
+      screen('admin/warehouses', ADMIN, <WarehousesPage />),
       screen('admin/deliveries', ADMIN, <DeliveriesPage />),
       screen('admin/holidays', ADMIN, <HolidaysPage />),
       screen('admin/ops', ADMIN, <OperationsPage />),

@@ -1,6 +1,7 @@
 import { RateDelivery } from '../../delivery/RateDelivery'
 import { DeliveryPartnerCard } from '../../delivery/DeliveryPartnerCard'
 import { LiveTrackingCard } from '../../tracking/LiveTrackingCard'
+import { ShipsFrom } from '../../warehouses/ShipsFrom'
 import {
   Alert,
   Anchor,
@@ -145,6 +146,7 @@ function OrderView({ order, live }: { order: Order; live: ReactNode }) {
                     {order.trackingNumber && <> · Tracking {order.trackingNumber}</>}
                   </Text>
                 )}
+                <ShipsFrom warehouseId={order.warehouseId} />
                 {order.deliveredAt && <Text size="sm">Delivered {formatDateTime(order.deliveredAt)}</Text>}
                 {closes && (
                   <Text size="sm" c="dimmed">

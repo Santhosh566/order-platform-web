@@ -184,7 +184,9 @@ export function CartPage() {
   }
 
   const busy = placeOrder.isPending || savingAddress
-  const canCheckout = !!address && unavailable.size === 0 && !busy && !codRefused
+  // Never split: items in different warehouses are ordered separately
+  const splitNeeded = !!priced?.shippingProblem
+  const canCheckout = !!address && unavailable.size === 0 && !busy && !codRefused && !splitNeeded
 
   return (
     <Stack gap="md">
@@ -405,6 +407,16 @@ export function CartPage() {
                       }), worked out on the price after any discount.`
                     : 'The GST split (CGST + SGST, or IGST) depends on the delivery state and is shown on your order and invoice.'}
                 </Text>
+                {priced?.shipsFrom && (
+                  <Text size="xs" c="dimmed">
+                    Ships from our {priced.shipsFrom.name}.
+                  </Text>
+                )}
+                {splitNeeded && (
+                  <Alert color="orange" icon={<IconAlertTriangle size={18} />} p="xs" title="Order these separately">
+                    {priced?.shippingProblem}
+                  </Alert>
+                )}
                 {codRefused && (
                   <Alert color="red" icon={<IconAlertTriangle size={18} />} p="xs">
                     Choose Pay online to place this order.
