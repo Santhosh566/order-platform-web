@@ -1,10 +1,49 @@
 # order-platform-web
 
-The web front end of the Order Integration Platform: the shop for customers, the console for
-admins, and the screens for delivery staff. It talks only to the REST API of
-`../order-integration-platform` and signs users in with Keycloak.
+The web front end of the Order Integration Platform: the **shop** for customers, the **console** for admins, and
+the **screens for delivery staff** (made for a phone). It talks only to the API of
+[`../order-integration-platform`](../order-integration-platform) and signs users in with Keycloak.
 
-React 19 · TypeScript · Vite · Mantine · React Router · TanStack Query · oidc-client-ts
+## At a glance
+
+| | |
+|---|---|
+| Stack | React 19 · TypeScript 7 · Vite 8 · Mantine 9 · React Router 7 · TanStack Query 5 |
+| Talks to | REST `/api/**`, GraphQL `/graphql` (shop catalogue), Server-Sent Events `/api/stream/orders` (live updates) |
+| Sign-in | Keycloak, OpenID Connect with PKCE (`oidc-client-ts`) |
+| Maps | Leaflet + react-leaflet, CARTO tiles (from OpenStreetMap data) |
+| Tests | 174 unit and page tests in 36 files (Vitest + Testing Library), 2 end-to-end stories (Playwright) |
+
+## How it fits together
+
+```
+ Browser (this app)                                   Backend (Spring Boot + Camel, :9091)
+ ─────────────────                                    ───────────────────────────────────
+ Keycloak sign-in (oidc-client-ts) ── token ──┐
+ TanStack Query hooks ── REST /api/** ────────┼────►  controllers, Camel REST routes
+ Shop pages ── GraphQL /graphql ──────────────┤       catalogue search, delivery dates
+ useLiveOrders ◄── SSE /api/stream/orders ────┘       order changes, driver positions (via Kafka)
+ Driver phone ── navigator.geolocation ── POST /api/delivery/location
+```
+
+In development, Vite serves the app on :5173 and passes `/api`, `/graphql` and `/graphiql` to the backend. In
+production, `npm run build` makes `dist/`, which the backend copies into its jar and serves on :9091.
+
+## Libraries, and why
+
+| Library | Used for |
+|---|---|
+| **React 19 + TypeScript** | The screens; TypeScript types mirror the backend's JSON (`src/api/types.ts`) |
+| **Vite** | Dev server with instant reload, production build, the proxy to the backend |
+| **Mantine** | Components (forms, tables, modals, notifications), light and dark themes |
+| **React Router** | Routes per role; each screen is loaded only when first opened |
+| **TanStack Query** | Server data: caching, refetching, mutations; live events update its cache directly |
+| **oidc-client-ts** | Keycloak sign-in, token refresh |
+| **React Hook Form + Zod** | Forms, with the same rules the server checks (profile, addresses, catalogue) |
+| **Leaflet + react-leaflet** | Live tracking map, drivers-on-the-road map, warehouses map (one lazily loaded chunk) |
+| **Vitest + Testing Library** | Unit and page tests against a fake backend (`src/test/fakeBackend.ts`) |
+| **Playwright** | End-to-end stories through the real stack |
+| **oxlint, Prettier** | Lint and formatting |
 
 ## Run it
 
@@ -12,20 +51,28 @@ Needs Node 20.19+ and the backend running on http://localhost:9091 (with Keycloa
 
 ```bash
 npm install
-npm run dev          # http://localhost:5173, /api is proxied to :9091
+npm run dev          # http://localhost:5173; /api and /graphql are proxied to :9091
 ```
 
-Another backend address: `ORDER_PLATFORM_API=http://host:port npm run dev`.
+| Setting | Default | What it is |
+|---|---|---|
+| `ORDER_PLATFORM_API` | `http://localhost:9091` | The backend the dev server proxies to |
+| `VITE_MAP_TILES_URL` | CARTO Positron | Map tiles (light). Set a provider of your own (MapTiler, Stadia…) for production |
+| `VITE_MAP_TILES_DARK_URL` | CARTO Dark Matter | Map tiles in dark mode |
+| `E2E_BASE_URL` | `http://localhost:9091` | Where Playwright opens the app |
 
-Demo users (password `demo1234`): `alice.smith@example.com` customer (CUST-100), `admin@example.com`
-admin, `driver1@example.com` delivery.
+Demo users (password `demo1234`): `alice.smith@example.com` customer (CUST-100), `bob.johnson@example.com`
+customer, `admin@example.com` admin, `driver1@example.com` and `driver2@example.com` delivery.
 
 ## Checks
 
 ```bash
-npm run check        # type check + lint + unit tests
+npm run check        # type check + lint + unit and page tests
 npm run build        # production build in dist/, which the backend then serves
 ```
+
+Page tests render real screens with a fake backend; the map is replaced by a stand-in, since jsdom cannot lay out
+Leaflet. `src/shop/catalogue.test.ts` checks every GraphQL query against the backend's schema file.
 
 ## End-to-end test (Playwright)
 
@@ -60,13 +107,17 @@ On a failure, `e2e-report/` has the steps, a screenshot, a video and a trace
 |---|---|
 | `src/api` | `client.ts` (token, JSON, errors, PDF downloads) and the backend's JSON types |
 | `src/auth` | Keycloak sign-in, `useAuth()`, `<RequireRole>`, start page per role |
-| `src/cart` | Cart rules (`cart.ts`) and the per-user cart kept in localStorage |
-| `src/admin` | TanStack Query hooks for the admin API, and the catalogue form rules |
-| `src/delivery` | Query hooks and helpers (next step, call and map links) for the driver screens |
-| `src/customer` | TanStack Query hooks for the customer API, and the live order stream (SSE) |
-| `src/components` | Status badges, address form and its rules, loading and error states |
-| `src/layout` | Header, role-based side menu (drawer on phones) |
-| `src/lib` | Rupee and date formatting, Indian states, order status rules |
+| `src/cart` | Cart rules (`cart.ts`) and `CartProvider`, which keeps a customer's cart on the server |
+| `src/checkout` | Quote, coupon box, payment and delivery slot choices |
+| `src/shop`, `src/wishlist`, `src/reviews`, `src/promotions` | Catalogue (GraphQL), product page parts, wishlist, reviews, banners |
+| `src/orders` | Order changes (address, slot, added items) |
+| `src/customer` | Customer API hooks and the live order stream (SSE) |
+| `src/tracking` | Live tracking: the map, the customer's card, the driver's location sharing, the admin map |
+| `src/warehouses` | Warehouse API hooks, "Ships from", a driver's warehouse |
+| `src/admin` | Admin API hooks, catalogue form rules, users, abandoned carts |
+| `src/delivery` | Driver API hooks and helpers (next step, call and map links), driver figures |
+| `src/wallet`, `src/holidays`, `src/profile` | Wallet and gift cards, delivery holidays, profiles and photos |
+| `src/components`, `src/layout`, `src/lib` | Shared parts, header and menu, formatting (rupees, dates), Indian states |
 | `src/pages` | Screens by role: `customer/`, `admin/`, `delivery/`; welcome, no access, not found |
 | `src/test` | Test setup, render helpers, fake backend and fixtures |
 
@@ -77,45 +128,48 @@ and the **style**: *Classic* (blue) or *Orange & Navy* (white page, navy text an
 orange buttons, hairline borders). Both are remembered in this browser only. Status colours (green
 delivered, red failed, …) mean the same in every style. Themes live in `src/theme.ts`.
 
-## Customer screens (phase 1)
+## Customer screens
 
 | Route | What it does |
 |---|---|
 | `/shop` | Promotion banners at the top (one at a time, moving on every 6 s except while pointed at, focused, or for people who asked for less motion); a strip of round category pictures (each the photo of its best product) with sub-categories as pills; search; the full filter panel (category, brand, price, rating, stock, with counts) behind the **Filters** button; sort; prices including GST and a stock label (never a count); an "Extra 20% off" badge on products with their own coupon; add to cart. `/shop?offer=CODE` lists the products a coupon is for, with its terms |
-| `/cart` | Quantities, today's prices (with a notice when a price changed), saved or other address; standard delivery or a booked day and time (full windows greyed out); pay online or cash on delivery (when the server allows it); "Use my wallet balance" (on when there is any; the summary shows what the wallet pays and what is left to pay online; not with cash on delivery); coupon code and the offers the customer can use. The summary is the server's quote: discount, GST and total |
+| `/cart` | Kept on the server (`/api/cart`), so it is the same on every device; a cart this browser kept before is merged in once. Quantities, today's prices (with a notice when a price changed), saved or other address; **"Ships from our … centre"**, or an orange **"Order these separately"** warning (and Place order disabled) when the items are in different warehouses; a coupon from a reminder email's link (`/cart?coupon=CODE`) is applied by itself; standard delivery or a booked day and time (full windows greyed out); pay online or cash on delivery (when the server allows it); "Use my wallet balance" (on when there is any; the summary shows what the wallet pays and what is left to pay online; not with cash on delivery); coupon code and the offers the customer can use. The summary is the server's quote: discount, GST and total |
 | `/orders` | The customer's orders, newest first; updates live |
-| `/orders/:id` | Progress, GST lines (CGST + SGST or IGST) with any coupon discount, payment method and booked delivery slot, invoice PDF, cancel, return items, returns and credit notes, and rating the delivery (1–5 stars, for 14 days after it arrives) |
-| `/shop/:sku` | Photos, price, the offers (coupons) that apply with their codes to copy, delivery date for a PIN (naming holidays it skips), specifications, ratings breakdown and reviews (sorted, paged); "Write a review" once the product was delivered |
+| `/orders/:id` | **Live tracking** while out for delivery (full width under the progress bar: big ETA, the driver on a map, distance, "in your area"; updates live), "Ships from …", progress, GST lines (CGST + SGST or IGST) with any coupon discount, payment method and booked delivery slot, invoice PDF, cancel, return items, returns and credit notes, and rating the delivery (1–5 stars, for 14 days after it arrives) |
+| `/shop/:sku` | Photos, price, the offers (coupons) that apply with their codes to copy, delivery date for a PIN from the nearest warehouse that has it ("Ships from …", naming holidays it skips), specifications, ratings breakdown and reviews (sorted, paged); "Write a review" once the product was delivered |
 | `/returns` | Return requests and where each one stands |
 | `/wallet` | Wallet balance, "Add a gift card" (the whole value goes in), and the history: gift cards, payments, refunds and credits, with links to the orders |
 | `/reviews` | Delivered products waiting for a review, and the customer's reviews with their status (and why one was not published); edit or delete |
 | `/wishlist` | Saved products at today's price and stock; add to cart, remove, or "Email me when it is back" for a sold-out one. The heart on every product card saves it |
 | `/account/address` | The default delivery address |
 
-## Admin screens (phase 2)
+## Admin screens
 
 | Route | What it does |
 |---|---|
 | `/admin` | Revenue, orders, returns to review, orders waiting for a driver, low stock, dead letters; orders by status |
 | `/admin/orders` | Search (id, customer, reference, invoice no.) and status filter, kept in the URL; 25 per page |
-| `/admin/orders/:id` | Everything the customer sees plus payment and fraud; cancel, goodwill refund, assign driver, return to stock; delivery attempts. Each action sends the order version shown (`If-Match`). If the order changed meanwhile, nothing happens: a yellow "This order changed" notice says what it is now and the page reloads it (the customer's cancel and cancel items work the same way) |
+| `/admin/orders/:id` | Everything the customer sees (live tracking included) plus payment and fraud; cancel, goodwill refund, assign driver, return to stock; delivery attempts. Each action sends the order version shown (`If-Match`). If the order changed meanwhile, nothing happens: a yellow "This order changed" notice says what it is now and the page reloads it (the customer's cancel and cancel items work the same way) |
 | `/admin/catalog` | Products with price, GST, stock and flags; new product |
-| `/admin/catalog/:sku` | Edit details, change the price now or schedule it, record stock received/corrected/written off, full stock history |
+| `/admin/catalog/:sku` | Edit details, change the price now or schedule it, **stock by warehouse**, record stock received/corrected/written off in a chosen warehouse, full stock history (with the warehouse of each movement) |
+| `/admin/warehouses` | **Warehouses** on a map and in a table (GSTIN, state, invoice prefixes, cut-off, stock); add one (the GSTIN's state must be the PIN's), edit name, address, cut-off, position, open or close; **Move stock** between two warehouses |
 | `/admin/returns` | Queue by status: approve, reject (with a note for the customer), receive goods (sellable or damaged) |
 | `/admin/reviews` | Reviews with words waiting to be published; publish, or reject with a note the customer is emailed |
 | `/admin/coupons` | Coupons with their uses and status (live, scheduled, expired, used up); create one for the whole order or for chosen categories and products; change what one is for, its end (or remove it) and on/off, with a warning when switching between whole order and chosen products; the code, discount and limits stay fixed; "Changed by" shows the last change |
 | `/admin/gift-cards` | Issue gift cards in batches (value, how many, valid until, batch name); the codes are shown once, to copy or download as CSV; list by status (not used, redeemed by whom, expired, stopped); stop a card that is not redeemed |
 | `/admin/promotions` | Shop banners with their status, views, clicks and click rate; create or change one with a live preview (opens a product, a category or a coupon's products); upload a wide picture; switch off; delete |
 | `/admin/holidays` | Delivery holidays by year: national or for one state; delivery dates and bookable days skip them |
+| `/admin/users/:id` | A driver's **Works from** warehouse can be changed here (see *Profile* below for the rest) |
 | `/admin/ops` | Failed messages (dead letters): replay once the cause is fixed, or dismiss with a note; history of who did what. Routes: pause, resume, stop or start the consumers (Kafka, files, timers); API and pipeline routes are view-only |
-| `/admin/deliveries` | Orders waiting for a driver, deliveries under way (reassign until collected), drivers and their load, and driver performance by day, week, month or year (sortable; a name opens that driver's figures and chart) |
+| `/admin/carts` | **Abandoned carts:** started, reminded, recovered (rate and sales), coupons sent and used, carts open now; the list by status |
+| `/admin/deliveries` | **Drivers on the road** map (live), orders waiting for a driver (with their warehouse), deliveries under way (reassign until collected), drivers and their load, and driver performance by day, week, month or year (sortable; a name opens that driver's figures and chart) |
 
-## Delivery screens (phase 3, made for a phone)
+## Delivery screens (made for a phone)
 
 | Route | What it does |
 |---|---|
-| `/delivery` | Orders ready to take, by area only (city, PIN); take one |
-| `/delivery/mine` | Deliveries in hand: address, Call and Map buttons, what is in the parcel, the booked day and time, cash to collect, and one button for the next step — collected → start delivery (emails the customer a code) → at the door tick "I collected ₹… in cash" for a cash-on-delivery order, then enter the 6-digit code. "Could not deliver" records a reason. |
+| `/delivery` | "You work from …": orders ready to take **at the driver's warehouse**, by area only (city, PIN); take one |
+| `/delivery/mine` | While a parcel is out for delivery the phone **shares its location** (a green banner says so; it stops by itself after the last delivery). Deliveries in hand: address, Call and Map buttons, what is in the parcel, the booked day and time, cash to collect, and one button for the next step — collected → start delivery (emails the customer a code) → at the door tick "I collected ₹… in cash" for a cash-on-delivery order, then enter the 6-digit code. "Could not deliver" records a reason. |
 | `/delivery/dashboard` | The driver's own figures: today's open jobs, deliveries, pickups, failures, cash and earnings; then a chosen day, week, month or year with completed, tasks, success rate, cash, earnings and customer rating against the period before, a chart (or table) of completed jobs, and customers' comments |
 
 **Return pickups** use the same screens: approved returns appear under *Return pickups* (area only).
@@ -150,7 +204,7 @@ Things the backend decides, and the page only reflects:
 
 "Edit profile" in the account menu (top right) opens `/profile` for every role:
 - A photo card: add, change or remove. The header avatar shows the photo, or initials when there is none.
-- Personal details for everyone, plus Vehicle, Emergency contact and Payouts for drivers, and Work for admins.
+- Personal details for everyone (customers also get a **Cart reminders** switch), plus Vehicle, Emergency contact and Payouts for drivers, and Work for admins.
 - Photos are private, so `usePhotoUrl` fetches them with the token and shows them through an object URL.
 - The form checks the same rules as the server (`profile/profileSchema.ts`).
 - `DeliveryPartnerCard` on `/orders/:id`: once the parcel is picked up, the customer sees who is bringing it (name, photo, vehicle number, rating), with a reminder to check them before giving the delivery code.
